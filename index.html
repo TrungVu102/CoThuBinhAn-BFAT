@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cô Thư Bình An - So Sánh Ảnh</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Merriweather cho nét chữ thanh thoát) -->
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Tùy chỉnh thanh trượt */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 2px rgba(0,0,0,0.5);
+            border: 2px solid #3b82f6;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #4b5563;
+            border-radius: 2px;
+        }
+        
+        input[type=range]:disabled::-webkit-slider-thumb {
+            background: #6b7280;
+            cursor: not-allowed;
+        }
+        input[type=range]:disabled::-webkit-slider-runnable-track {
+            background: #374151;
+            cursor: not-allowed;
+        }
+        
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        canvas { touch-action: none; outline: none; }
+        
+        .canvas-bg {
+            background-color: #1f2937;
+            background-image: 
+                linear-gradient(45deg, #252f3f 25%, transparent 25%), 
+                linear-gradient(-45deg, #252f3f 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #252f3f 75%), 
+                linear-gradient(-45deg, transparent 75%, #252f3f 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        /* Ẩn thanh cuộn ngang cho toolbar trên mobile nhưng vẫn scroll được */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Checkbox style */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #68D391;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #68D391;
+        }
+
+        /* Class để đánh dấu editor đang được active để dùng phím */
+        .active-editor-wrapper {
+            box-shadow: inset 0 0 0 2px #3b82f6; /* Viền xanh bên trong */
+        }
+        
+        /* Font thương hiệu */
+        .font-brand {
+            font-family: 'Merriweather', serif;
+        }
+    </style>
+</head>
+<!-- Sử dụng h-screen và overflow-hidden để khóa chiều cao trang web -->
+<body class="bg-gray-900 text-gray-200 h-screen flex flex-col font-sans overflow-hidden">
+
+    <!-- Datalist cho điểm trung tâm -->
+    <datalist id="tick-rotate"><option value="0"></option></datalist>
+
+    <!-- Header & Action Bar Compact (Fixed Height) -->
+    <div class="shrink-0 z-50 shadow-lg bg-gray-800 border-b border-gray-700">
+        <div class="max-w-6xl mx-auto px-2 py-2 flex items-center justify-between gap-2 overflow-x-auto hide-scrollbar">
+            
+            <!-- Brand: Cô Thư Bình An -->
+            <div class="flex items-center gap-3 mr-4 shrink-0">
+                <!-- Logo Image Placeholder -->
+                <div class="w-10 h-10 rounded-full border-2 border-pink-400 bg-white overflow-hidden flex items-center justify-center shadow-lg relative group cursor-pointer">
+                    <!-- Placeholder Logo (Thay src bằng link logo thật của bạn) -->
+                    <img src="https://ui-avatars.com/api/?name=Co+Thu&background=fbcfe8&color=db2777&font-size=0.4" alt="Logo Cô Thư" class="w-full h-full object-cover">
+                </div>
+                
+                <!-- Brand Name -->
+                <div class="flex flex-col justify-center">
+                    <span class="text-pink-400 font-bold text-sm md:text-base font-brand leading-none">Cô Thư</span>
+                    <span class="text-gray-300 text-[10px] md:text-xs font-light tracking-widest uppercase mt-0.5">Bình An</span>
+                </div>
+            </div>
+
+            <!-- Main Toolbar Buttons -->
+            <div class="flex items-center gap-2 flex-grow justify-end md:justify-between">
+                
+                <!-- Upload Group -->
+                <div class="flex gap-2">
+                    <label class="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-md text-xs md:text-sm font-medium shadow transition flex items-center gap-1 md:gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-upload"></i> <span class="hidden sm:inline">Trái</span>
+                        <input type="file" id="upload1" accept="image/*" class="hidden">
+                    </label>
+                    <label class="cursor-pointer bg-orange-600 hover:bg-orange-500 text-white px-3 py-1.5 rounded-md text-xs md:text-sm font-medium shadow transition flex items-center gap-1 md:gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-upload"></i> <span class="hidden sm:inline">Phải</span>
+                        <input type="file" id="upload2" accept="image/*" class="hidden">
+                    </label>
+                </div>
+
+                <div class="w-px h-6 bg-gray-600 hidden md:block mx-1"></div>
+
+                <!-- Tools Group -->
+                <div class="flex gap-2 items-center">
+                    <button onclick="toggleFrameLock()" id="lockBtn" class="bg-gray-700 hover:bg-gray-600 text-green-400 px-3 py-1.5 rounded-md text-xs md:text-sm transition border border-green-500/30 flex items-center gap-1 md:gap-2 font-medium whitespace-nowrap">
+                        <i class="fa-solid fa-lock-open"></i> <span class="hidden sm:inline">Mở Khóa</span>
+                    </button>
+
+                    <!-- Grid Controls Group -->
+                    <div class="flex bg-gray-700 rounded-md border border-gray-600 overflow-hidden">
+                        <button onclick="toggleGrid()" id="gridBtn" class="px-3 py-1.5 hover:bg-gray-600 text-gray-400 transition" title="Bật/Tắt Lưới">
+                            <i class="fa-solid fa-border-all"></i>
+                        </button>
+                        <div class="w-px bg-gray-600"></div>
+                        <button onclick="toggleGridColor()" id="gridColorBtn" class="px-3 py-1.5 hover:bg-gray-600 text-white transition" title="Đổi Màu Lưới (Sáng/Tối)">
+                            <i class="fa-solid fa-circle-half-stroke"></i>
+                        </button>
+                        <div class="w-px bg-gray-600"></div>
+                        <!-- Nút Bật/Tắt Trục Giữa -->
+                        <button onclick="toggleCenterAxis()" id="centerAxisBtn" class="px-3 py-1.5 hover:bg-gray-600 text-red-400 bg-gray-600 transition" title="Bật/Tắt Trục Giữa">
+                            <i class="fa-solid fa-ruler-vertical"></i>
+                        </button>
+                    </div>
+                    
+                    <button onclick="exportImage()" class="bg-white text-gray-900 hover:bg-gray-100 font-bold px-4 py-1.5 rounded-md text-xs md:text-sm shadow transition flex items-center gap-2 whitespace-nowrap ml-1">
+                        <i class="fa-solid fa-eye"></i> <span class="hidden sm:inline">Xem Trước</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace (Flex Grow to fill remaining space) -->
+    <main class="flex-grow flex flex-col items-center justify-between p-2 min-h-0">
+        
+        <!-- VISUAL STAGE (Responsive Height) -->
+        <div class="flex-1 w-full min-h-0 flex items-center justify-center relative">
+            <!-- Container giữ tỷ lệ và co giãn theo chiều cao -->
+            <div id="stageContainer" class="relative shadow-2xl rounded-lg overflow-hidden border border-gray-700 bg-black flex" style="aspect-ratio: 1080/960; max-height: 100%; max-width: 100%;">
+                
+                <!-- Đường kẻ phân cách -->
+                <div class="absolute left-1/2 top-0 bottom-0 w-px bg-white/20 z-10 transform -translate-x-1/2 pointer-events-none"></div>
+
+                <!-- Canvas Trái -->
+                <div id="wrapper1" class="relative w-1/2 h-full canvas-bg group transition-all duration-200">
+                    <canvas id="canvas1" class="w-full h-full block"></canvas>
+                    <div id="placeholder1" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 pointer-events-none p-2 text-center">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl md:text-5xl mb-2 text-gray-600"></i>
+                        <span class="text-[10px] md:text-sm">Before</span>
+                    </div>
+                    <div class="absolute top-2 left-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded pointer-events-none">BEFORE</div>
+                </div>
+
+                <!-- Canvas Phải -->
+                <div id="wrapper2" class="relative w-1/2 h-full canvas-bg group transition-all duration-200">
+                    <canvas id="canvas2" class="w-full h-full block"></canvas>
+                    <div id="placeholder2" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 pointer-events-none p-2 text-center">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl md:text-5xl mb-2 text-gray-600"></i>
+                        <span class="text-[10px] md:text-sm">After</span>
+                    </div>
+                    <div class="absolute top-2 right-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded pointer-events-none">AFTER</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROTATE CONTROLS (Fixed Height Area) -->
+        <div id="controlsArea" class="shrink-0 mt-2 transition-[width] duration-75 ease-out">
+            <div class="grid grid-cols-2 gap-2 px-1 mb-2">
+                <!-- Left Rotate -->
+                <div class="bg-gray-800 p-2 rounded-lg border border-gray-700 flex items-center gap-2">
+                    <i class="fa-solid fa-rotate text-gray-400 text-xs" title="Xoay Trái"></i>
+                    <input type="range" id="rotateRange1" min="-180" max="180" step="0.5" value="0" list="tick-rotate" class="flex-grow h-1.5 cursor-pointer">
+                    <input type="number" id="rotateInput1" min="-180" max="180" step="0.5" value="0" class="w-12 bg-gray-700 border border-gray-600 rounded px-1 text-center text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
+                </div>
+                
+                <!-- Right Rotate -->
+                <div class="bg-gray-800 p-2 rounded-lg border border-gray-700 flex items-center gap-2">
+                    <i class="fa-solid fa-rotate text-gray-400 text-xs" title="Xoay Phải"></i>
+                    <input type="range" id="rotateRange2" min="-180" max="180" step="0.5" value="0" list="tick-rotate" class="flex-grow h-1.5 cursor-pointer">
+                    <input type="number" id="rotateInput2" min="-180" max="180" step="0.5" value="0" class="w-12 bg-gray-700 border border-gray-600 rounded px-1 text-center text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
+                </div>
+            </div>
+            
+            <p class="text-[10px] text-gray-500 italic flex flex-wrap gap-3 justify-center opacity-80 select-none pb-1">
+                <span class="flex items-center gap-1"><i class="fa-regular fa-hand-pointer text-gray-400"></i> Click hình & Dùng phím Mũi tên</span>
+                <span class="flex items-center gap-1"><i class="fa-solid fa-rotate-left text-gray-400"></i> Ctrl+Z: Undo</span>
+                <span class="flex items-center gap-1"><i class="fa-solid fa-rotate-right text-gray-400"></i> Ctrl+Shift+Z: Redo</span>
+            </p>
+        </div>
+    </main>
+
+    <!-- Modal Preview -->
+    <div id="previewModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full h-[90vh] flex flex-col border border-gray-700 relative">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-900 shrink-0 rounded-t-xl z-10">
+                <h3 class="text-white font-bold text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-image text-green-400"></i> Kết Quả
+                </h3>
+                <button onclick="closePreview()" class="text-gray-400 hover:text-white transition w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 min-h-0 bg-gray-900/50 flex items-center justify-center p-4 overflow-hidden">
+                <img id="previewImage" src="" alt="Preview" class="max-w-full max-h-full shadow-lg rounded object-contain border border-gray-600">
+            </div>
+            
+            <div class="p-4 border-t border-gray-700 bg-gray-900 flex flex-col sm:flex-row justify-between items-center gap-3 shrink-0 rounded-b-xl z-10">
+                
+                <div class="flex items-center gap-4 flex-wrap">
+                    <label class="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white select-none">
+                        <input type="checkbox" id="exportGridCheck" class="w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                        <span class="text-sm font-medium">Gắn Lưới</span>
+                    </label>
+
+                    <!-- New Checkbox for Center Axis in Preview -->
+                    <label class="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white select-none">
+                        <input type="checkbox" id="exportAxisCheck" class="w-5 h-5 rounded border-gray-600 bg-gray-700 text-red-500 focus:ring-red-500 cursor-pointer">
+                        <span class="text-sm font-medium">Gắn Trục Giữa</span>
+                    </label>
+                    
+                    <!-- Input Labels -->
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="label1Input" value="BEFORE" class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-white w-20 text-center" placeholder="Nhãn trái">
+                        <input type="text" id="label2Input" value="AFTER" class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-white w-20 text-center" placeholder="Nhãn phải">
+                    </div>
+                </div>
+
+                <div class="flex gap-3 w-full sm:w-auto justify-end">
+                    <button onclick="closePreview()" class="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition font-medium">Quay lại</button>
+                    <button onclick="confirmDownload()" class="px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-500 transition font-bold shadow-lg flex items-center gap-2">
+                        <i class="fa-solid fa-download"></i> Tải Về
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CANVAS_WIDTH = 540;
+        const CANVAS_HEIGHT = 960;
+        let showGrid = false;
+        let showCenterAxis = true; // Mặc định hiển thị trục giữa
+        let gridColor = 'light'; 
+        let frameWidth = 540;
+        let frameHeight = 960;
+        let frameY = 0;
+        const MIN_W = 100;
+        const MIN_H = 100;
+        
+        let isExporting = false;
+        let isFrameLocked = false; 
+        let includeGridInExport = false; 
+        let includeCenterAxisInExport = false; // Mặc định tắt trục giữa khi xuất ảnh
+        
+        let activeEditor = null;
+
+        // --- HỆ THỐNG LỊCH SỬ (UNDO/REDO) ---
+        const historyStack = [];
+        const redoStack = []; // Stack cho Redo
+        const MAX_HISTORY = 50;
+
+        function saveHistory() {
+            // Sao chép trạng thái hiện tại
+            const state = {
+                frameWidth,
+                frameHeight,
+                frameY,
+                isFrameLocked,
+                edit1: {
+                    crop: { ...edit1.crop },
+                    state: { ...edit1.state }
+                },
+                edit2: {
+                    crop: { ...edit2.crop },
+                    state: { ...edit2.state }
+                }
+            };
+            
+            // Tránh lưu trạng thái trùng lặp
+            if (historyStack.length > 0) {
+                const last = JSON.stringify(historyStack[historyStack.length - 1]);
+                const current = JSON.stringify(state);
+                if (last === current) return;
+            }
+
+            historyStack.push(state);
+            if (historyStack.length > MAX_HISTORY) historyStack.shift();
+            
+            // Khi có hành động mới, xóa lịch sử Redo
+            redoStack.length = 0;
+        }
+
+        function undo() {
+            if (historyStack.length <= 1) return; // Luôn giữ lại trạng thái ban đầu
+            
+            const currentState = historyStack.pop(); // Lấy trạng thái hiện tại ra
+            redoStack.push(currentState); // Lưu vào stack Redo
+            
+            const prevState = historyStack[historyStack.length - 1]; // Lấy trạng thái trước đó
+            restoreState(prevState);
+        }
+
+        function redo() {
+            if (redoStack.length === 0) return; // Không có gì để Redo
+            
+            const nextState = redoStack.pop(); // Lấy trạng thái từ stack Redo
+            historyStack.push(nextState); // Đẩy lại vào stack History
+            
+            restoreState(nextState);
+        }
+
+        function restoreState(state) {
+            frameWidth = state.frameWidth;
+            frameHeight = state.frameHeight;
+            frameY = state.frameY;
+            isFrameLocked = state.isFrameLocked;
+            
+            // Cập nhật giao diện nút khóa
+            updateLockUI();
+
+            // Khôi phục editor 1
+            edit1.crop = { ...state.edit1.crop };
+            edit1.state = { ...state.edit1.state };
+            
+            // Khôi phục editor 2
+            edit2.crop = { ...state.edit2.crop };
+            edit2.state = { ...state.edit2.state };
+            
+            // Cập nhật thanh trượt và vẽ lại
+            edit1.updateControls();
+            edit2.updateControls();
+            
+            edit1.draw();
+            edit2.draw();
+        }
+
+        // Helper cập nhật UI nút khóa
+        function updateLockUI() {
+            if (isFrameLocked) {
+                lockBtn.innerHTML = '<i class="fa-solid fa-lock"></i> <span class="hidden sm:inline">Đã Khóa</span>';
+                lockBtn.className = "text-xs px-3 py-1.5 rounded-md border border-red-500 text-red-400 bg-red-900/20 hover:bg-red-900/30 transition flex items-center gap-1 md:gap-2 font-medium whitespace-nowrap";
+            } else {
+                lockBtn.innerHTML = '<i class="fa-solid fa-lock-open"></i> <span class="hidden sm:inline">Mở Khóa</span>';
+                lockBtn.className = "text-xs px-3 py-1.5 rounded-md border border-green-500 text-green-400 hover:bg-green-900/30 transition flex items-center gap-1 md:gap-2 font-medium whitespace-nowrap";
+            }
+        }
+
+        class Editor {
+            constructor(canvasId, wrapperId, uploadId, rotateRangeId, rotateInputId, placeholderId, side) {
+                this.canvas = document.getElementById(canvasId);
+                this.wrapper = document.getElementById(wrapperId); 
+                this.ctx = this.canvas.getContext('2d');
+                this.placeholder = document.getElementById(placeholderId);
+                this.side = side;
+                
+                this.rotateRange = document.getElementById(rotateRangeId);
+                this.rotateInput = document.getElementById(rotateInputId);
+                
+                this.canvas.width = CANVAS_WIDTH;
+                this.canvas.height = CANVAS_HEIGHT;
+
+                this.img = new Image();
+                this.isLoaded = false;
+                
+                this.crop = { t: 0, b: 0, l: 0, r: 0 };
+                
+                this.state = { x: CANVAS_WIDTH/2, y: CANVAS_HEIGHT/2, scale: 1, angle: 0 };
+                this.drag = { isDragging: false, lastX: 0, lastY: 0 };
+                
+                this.interaction = { 
+                    active: false, 
+                    type: 'none', 
+                    startDist: 0, 
+                    startScale: 1,
+                    anchorCanvas: { x: 0, y: 0 },
+                    cropStart: 0 
+                };
+
+                this.initEvents(uploadId);
+            }
+
+            // --- HELPER PHÍM MŨI TÊN ---
+            pan(dx, dy) {
+                if (!this.isLoaded) return;
+                this.state.x += dx;
+                this.state.y += dy;
+                saveHistory(); // Lưu lịch sử khi dùng phím mũi tên
+                this.draw();
+            }
+
+            setActive() {
+                if (activeEditor && activeEditor !== this) {
+                    activeEditor.wrapper.classList.remove('active-editor-wrapper');
+                }
+                activeEditor = this;
+                this.wrapper.classList.add('active-editor-wrapper');
+            }
+
+            getCanvasCoords(evt) {
+                const rect = this.canvas.getBoundingClientRect();
+                const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+                const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+                const scaleX = this.canvas.width / rect.width;
+                const scaleY = this.canvas.height / rect.height;
+                return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+            }
+
+            getInverseTransformedPoint(x, y) {
+                const rad = -this.state.angle * Math.PI / 180; 
+                const cos = Math.cos(rad);
+                const sin = Math.sin(rad);
+                let dx = x - this.state.x;
+                let dy = y - this.state.y;
+                let rx = dx * cos - dy * sin;
+                let ry = dx * sin + dy * cos;
+                let lx = rx / this.state.scale;
+                let ly = ry / this.state.scale;
+                return { x: lx, y: ly };
+            }
+
+            transformPoint(localX, localY, scale, angle, cx, cy) {
+                const rad = angle * Math.PI / 180;
+                const cos = Math.cos(rad);
+                const sin = Math.sin(rad);
+                const sx = localX * scale;
+                const sy = localY * scale;
+                const rx = sx * cos - sy * sin;
+                const ry = sx * sin + sy * cos;
+                return { x: cx + rx, y: cy + ry };
+            }
+
+            getVisibleCorners() {
+                if (!this.isLoaded) return [];
+                const w = this.img.width;
+                const h = this.img.height;
+                const l = -w/2 + this.crop.l;
+                const r = w/2 - this.crop.r;
+                const t = -h/2 + this.crop.t;
+                const b = h/2 - this.crop.b;
+                const cornersLocal = [{ x: l, y: t }, { x: r, y: t }, { x: r, y: b }, { x: l, y: b }];
+                return cornersLocal.map(pt => this.transformPoint(pt.x, pt.y, this.state.scale, this.state.angle, this.state.x, this.state.y));
+            }
+
+            getCropHandles() {
+                if (!this.isLoaded) return {};
+                const w = this.img.width;
+                const h = this.img.height;
+                const l = -w/2 + this.crop.l;
+                const r = w/2 - this.crop.r;
+                const t = -h/2 + this.crop.t;
+                const b = h/2 - this.crop.b;
+                const midX = (l + r) / 2;
+                const midY = (t + b) / 2;
+                const handlesLocal = {
+                    top:    { x: midX, y: t },
+                    bottom: { x: midX, y: b },
+                    left:   { x: l, y: midY },
+                    right:  { x: r, y: midY }
+                };
+                const handles = {};
+                for (let key in handlesLocal) {
+                    const pt = handlesLocal[key];
+                    handles[key] = this.transformPoint(pt.x, pt.y, this.state.scale, this.state.angle, this.state.x, this.state.y);
+                }
+                return handles;
+            }
+
+            checkHit(x, y) {
+                const margin = 20; 
+                
+                // 1. Frame Hit Test
+                if (!isFrameLocked) {
+                    const topY = frameY;
+                    let edgeX = (this.side === 'left') ? (CANVAS_WIDTH - frameWidth) : frameWidth;
+                    
+                    const hitTop = Math.abs(y - topY) < margin;
+                    const hitSide = Math.abs(x - edgeX) < margin;
+
+                    if (hitTop && hitSide) return { type: 'frame-corner-top' };
+                    if (hitTop) return { type: 'frame-top' };
+                    if (hitSide) return { type: 'frame-side' };
+                }
+
+                if (this.isLoaded) {
+                    // 2. Crop Handles
+                    const cropHandles = this.getCropHandles();
+                    for (let key in cropHandles) {
+                        const pt = cropHandles[key];
+                        const dist = Math.sqrt((x - pt.x)**2 + (y - pt.y)**2);
+                        if (dist < margin) return { type: 'crop-handle', side: key };
+                    }
+                    // 3. Zoom Handles
+                    const corners = this.getVisibleCorners();
+                    for (let i = 0; i < corners.length; i++) {
+                        const pt = corners[i];
+                        const dist = Math.sqrt((x - pt.x)**2 + (y - pt.y)**2);
+                        if (dist < margin) return { type: 'image-corner', index: i };
+                    }
+
+                    // 4. CHECK INSIDE IMAGE FOR PAN
+                    const localPt = this.getInverseTransformedPoint(x, y);
+                    const w = this.img.width;
+                    const h = this.img.height;
+                    
+                    const l = -w/2 + this.crop.l;
+                    const r = w/2 - this.crop.r;
+                    const t = -h/2 + this.crop.t;
+                    const b = h/2 - this.crop.b;
+
+                    if (localPt.x >= l && localPt.x <= r && localPt.y >= t && localPt.y <= b) {
+                        return { type: 'pan' };
+                    }
+                }
+                
+                return { type: 'none' };
+            }
+
+            initEvents(uId) {
+                document.getElementById(uId).addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if(!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        this.img.src = ev.target.result;
+                        this.img.onload = () => {
+                            this.isLoaded = true;
+                            this.crop = { t: 0, b: 0, l: 0, r: 0 };
+                            this.placeholder.style.display = 'none';
+                            this.resetView();
+                            this.setActive(); 
+                            saveHistory(); // Lưu lịch sử khi ảnh mới load xong
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+
+                const updateRotate = (val) => {
+                    let numVal = parseFloat(val);
+                    if (isNaN(numVal)) numVal = 0;
+                    this.state.angle = numVal;
+                    if(this.rotateRange) this.rotateRange.value = numVal;
+                    if(this.rotateInput) this.rotateInput.value = numVal;
+                    this.draw();
+                };
+
+                // Lắng nghe sự kiện change để lưu lịch sử khi dừng kéo thanh trượt
+                if(this.rotateRange) {
+                    this.rotateRange.addEventListener('input', (e) => updateRotate(e.target.value));
+                    this.rotateRange.addEventListener('change', () => saveHistory());
+                }
+                if(this.rotateInput) {
+                    this.rotateInput.addEventListener('input', (e) => updateRotate(e.target.value));
+                    this.rotateInput.addEventListener('change', (e) => {
+                        updateRotate(e.target.value);
+                        saveHistory();
+                    });
+                }
+
+                const start = (e) => {
+                    this.setActive();
+                    if (e.cancelable && !this.isLoaded) return;
+                    const coords = this.getCanvasCoords(e);
+                    const hit = this.checkHit(coords.x, coords.y);
+                    this.interaction.active = true;
+                    this.interaction.type = hit.type;
+                    this.drag.lastX = e.touches ? e.touches[0].clientX : e.clientX;
+                    this.drag.lastY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                    if (hit.type === 'crop-handle') {
+                        this.interaction.cropSide = hit.side;
+                    }
+                    else if (hit.type === 'image-corner') {
+                        const cornerIdx = hit.index;
+                        const anchorIdx = (cornerIdx + 2) % 4;
+                        const w = this.img.width; const h = this.img.height;
+                        const l = -w/2 + this.crop.l; const r = w/2 - this.crop.r;
+                        const t = -h/2 + this.crop.t; const b = h/2 - this.crop.b;
+                        const cornersLocal = [{ x: l, y: t }, { x: r, y: t }, { x: r, y: b }, { x: l, y: b }];
+                        const anchorLocal = cornersLocal[anchorIdx];
+                        this.interaction.anchorCanvas = this.transformPoint(anchorLocal.x, anchorLocal.y, this.state.scale, this.state.angle, this.state.x, this.state.y);
+                        this.interaction.anchorIdx = anchorIdx; 
+                        const dist = Math.sqrt((coords.x - this.interaction.anchorCanvas.x)**2 + (coords.y - this.interaction.anchorCanvas.y)**2);
+                        this.interaction.startDist = dist;
+                        this.interaction.startScale = this.state.scale;
+                    }
+                    
+                    if (hit.type !== 'none') {
+                        this.canvas.style.cursor = 'grabbing';
+                        if(e.cancelable) e.preventDefault();
+                    }
+                };
+
+                const move = (e) => {
+                    const coords = this.getCanvasCoords(e);
+                    if (!this.interaction.active) {
+                        const hit = this.checkHit(coords.x, coords.y);
+                        if (hit.type.startsWith('frame')) {
+                            if (hit.type.includes('corner')) this.canvas.style.cursor = 'nwse-resize';
+                            else if (hit.type.includes('side')) this.canvas.style.cursor = 'ew-resize';
+                            else this.canvas.style.cursor = 'ns-resize';
+                        }
+                        else if (hit.type === 'image-corner') this.canvas.style.cursor = 'nwse-resize';
+                        else if (hit.type === 'crop-handle') {
+                            if (hit.side === 'left' || hit.side === 'right') this.canvas.style.cursor = 'ew-resize';
+                            else this.canvas.style.cursor = 'ns-resize';
+                        }
+                        else if (hit.type === 'pan') this.canvas.style.cursor = 'grab';
+                        else this.canvas.style.cursor = 'default'; 
+                        return;
+                    }
+                    if (this.interaction.active) {
+                        if(e.cancelable) e.preventDefault();
+                        const type = this.interaction.type;
+                        
+                        // CROP
+                        if (type === 'crop-handle') {
+                            const side = this.interaction.cropSide;
+                            const localPt = this.getInverseTransformedPoint(coords.x, coords.y);
+                            const w = this.img.width; const h = this.img.height;
+                            const minSize = 50;
+
+                            if (side === 'top') {
+                                let newCropT = localPt.y + h/2;
+                                if (newCropT < 0) newCropT = 0;
+                                if (newCropT > h - this.crop.b - minSize) newCropT = h - this.crop.b - minSize;
+                                this.crop.t = newCropT;
+                            } else if (side === 'bottom') {
+                                let newCropB = h/2 - localPt.y;
+                                if (newCropB < 0) newCropB = 0;
+                                if (newCropB > h - this.crop.t - minSize) newCropB = h - this.crop.t - minSize;
+                                this.crop.b = newCropB;
+                            } else if (side === 'left') {
+                                let newCropL = localPt.x + w/2;
+                                if (newCropL < 0) newCropL = 0;
+                                if (newCropL > w - this.crop.r - minSize) newCropL = w - this.crop.r - minSize;
+                                this.crop.l = newCropL;
+                            } else if (side === 'right') {
+                                let newCropR = w/2 - localPt.x;
+                                if (newCropR < 0) newCropR = 0;
+                                if (newCropR > w - this.crop.l - minSize) newCropR = w - this.crop.l - minSize;
+                                this.crop.r = newCropR;
+                            }
+                            this.draw();
+                        }
+                        // ZOOM
+                        else if (type === 'image-corner') {
+                            const anchor = this.interaction.anchorCanvas;
+                            const currentDist = Math.sqrt((coords.x - anchor.x)**2 + (coords.y - anchor.y)**2);
+                            if (this.interaction.startDist > 0) {
+                                let newScale = (currentDist / this.interaction.startDist) * this.interaction.startScale;
+                                if (newScale < 0.1) newScale = 0.1; if (newScale > 4) newScale = 4;
+                                this.state.scale = newScale;
+                            }
+                            const w = this.img.width; const h = this.img.height;
+                            const l = -w/2 + this.crop.l; const r = w/2 - this.crop.r;
+                            const t = -h/2 + this.crop.t; const b = h/2 - this.crop.b;
+                            const cornersLocal = [{ x: l, y: t }, { x: r, y: t }, { x: r, y: b }, { x: l, y: b }];
+                            const anchorLocal = cornersLocal[this.interaction.anchorIdx];
+                            const rad = this.state.angle * Math.PI / 180;
+                            const cos = Math.cos(rad); const sin = Math.sin(rad);
+                            const sx = anchorLocal.x * this.state.scale; const sy = anchorLocal.y * this.state.scale;
+                            const rx = sx * cos - sy * sin; const ry = sx * sin + sy * cos;
+                            this.state.x = anchor.x - rx; this.state.y = anchor.y - ry;
+                            this.updateControls(); this.draw();
+                        }
+                        // PAN
+                        else if (type === 'pan' && this.isLoaded) {
+                            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                            const rect = this.canvas.getBoundingClientRect();
+                            const scaleRatio = CANVAS_WIDTH / rect.width;
+                            const dx = (clientX - this.drag.lastX) * scaleRatio;
+                            const dy = (clientY - this.drag.lastY) * scaleRatio;
+                            this.state.x += dx;
+                            this.state.y += dy;
+                            this.drag.lastX = clientX;
+                            this.drag.lastY = clientY;
+                            this.draw();
+                        }
+                        // FRAME
+                        else if (type.startsWith('frame') && !isFrameLocked) {
+                            if (type === 'frame-top' || type === 'frame-corner-top') {
+                                let newY = coords.y;
+                                const maxTop = CANVAS_HEIGHT - MIN_H;
+                                if (newY < 0) newY = 0; if (newY > maxTop) newY = maxTop;
+                                const newHeight = CANVAS_HEIGHT - newY;
+                                updateGlobalFrame(null, newHeight); 
+                            }
+                            if (type.includes('side') || type.includes('corner')) {
+                                let newW = frameWidth;
+                                if (this.side === 'left') newW = CANVAS_WIDTH - coords.x;
+                                else newW = coords.x;
+                                if (newW < MIN_W) newW = MIN_W; if (newW > CANVAS_WIDTH) newW = CANVAS_WIDTH;
+                                updateGlobalFrame(newW, null);
+                            }
+                        }
+                    }
+                };
+
+                const end = () => {
+                    // Nếu vừa mới tương tác xong (có thay đổi), thì lưu lịch sử
+                    if (this.interaction.active) {
+                        this.interaction.active = false;
+                        saveHistory(); 
+                    }
+                    this.interaction.type = 'none';
+                    this.canvas.style.cursor = 'grab';
+                };
+
+                this.canvas.addEventListener('mousedown', start);
+                window.addEventListener('mousemove', move);
+                window.addEventListener('mouseup', end);
+                this.canvas.addEventListener('touchstart', start, {passive: false});
+                window.addEventListener('touchmove', move, {passive: false});
+                window.addEventListener('touchend', end);
+            }
+
+            resetView() {
+                // Tính toán tâm của khung hình hiện tại
+                let activeX = (this.side === 'left') ? (CANVAS_WIDTH - frameWidth) : 0;
+                let activeY = frameY;
+                
+                // Đặt ảnh vào giữa khung
+                this.state.x = activeX + frameWidth / 2;
+                this.state.y = activeY + frameHeight / 2;
+                
+                this.state.angle = 0;
+                
+                // Tính scale để fit vào khung (Contain)
+                const rW = frameWidth / this.img.width;
+                const rH = frameHeight / this.img.height;
+                
+                // Chọn tỷ lệ nhỏ hơn để đảm bảo toàn bộ ảnh nằm trong khung
+                this.state.scale = Math.min(rW, rH); 
+                
+                this.updateControls();
+                this.draw();
+            }
+
+            updateControls() {
+                const rotateVal = parseFloat(this.state.angle.toFixed(1));
+                if(this.rotateRange) this.rotateRange.value = rotateVal;
+                if(this.rotateInput) this.rotateInput.value = rotateVal;
+            }
+
+            draw() {
+                this.ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                if(this.isLoaded) {
+                    this.ctx.save();
+                    this.ctx.translate(this.state.x, this.state.y);
+                    this.ctx.rotate(this.state.angle * Math.PI/180);
+                    this.ctx.scale(this.state.scale, this.state.scale);
+                    
+                    const sX = this.crop.l;
+                    const sY = this.crop.t;
+                    const sW = this.img.width - this.crop.l - this.crop.r;
+                    const sH = this.img.height - this.crop.t - this.crop.b;
+                    const dX = -this.img.width/2 + this.crop.l;
+                    const dY = -this.img.height/2 + this.crop.t;
+                    this.ctx.drawImage(this.img, sX, sY, sW, sH, dX, dY, sW, sH);
+                    this.ctx.restore();
+                    
+                    if (!isExporting) {
+                        this.drawImageHandles();
+                        this.drawCropHandles();
+                    }
+                }
+                
+                const shouldDrawGrid = showGrid && (!isExporting || includeGridInExport);
+                if (shouldDrawGrid) this.drawGrid();
+                
+                // Logic vẽ trục giữa:
+                // 1. Không export: vẽ nếu showCenterAxis bật
+                // 2. Có export: vẽ nếu includeCenterAxisInExport bật
+                if (!isExporting) {
+                    this.drawFrameMask();
+                    if(showCenterAxis) this.drawCenterAxis(); 
+                } else {
+                    if(includeCenterAxisInExport) this.drawCenterAxis();
+                }
+            }
+
+            drawCenterAxis() {
+                const activeY = frameY;
+                let activeX = (this.side === 'left') ? (CANVAS_WIDTH - frameWidth) : 0;
+                const centerX = activeX + frameWidth / 2;
+
+                this.ctx.save();
+                this.ctx.strokeStyle = "red"; // Màu đỏ
+                this.ctx.lineWidth = 1;       // Mỏng
+                this.ctx.beginPath();
+                this.ctx.moveTo(centerX, activeY);
+                this.ctx.lineTo(centerX, activeY + frameHeight);
+                this.ctx.stroke();
+                this.ctx.restore();
+            }
+
+            drawImageHandles() {
+                const corners = this.getVisibleCorners();
+                this.ctx.save();
+                this.ctx.fillStyle = "#3b82f6"; this.ctx.strokeStyle = "white"; this.ctx.lineWidth = 2;
+                for (let pt of corners) {
+                    this.ctx.beginPath(); this.ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+                    this.ctx.fill(); this.ctx.stroke();
+                }
+                this.ctx.restore();
+            }
+
+            drawCropHandles() {
+                const handles = this.getCropHandles();
+                this.ctx.save();
+                this.ctx.fillStyle = "#ef4444"; this.ctx.strokeStyle = "white"; this.ctx.lineWidth = 2;
+                for (let key in handles) {
+                    const pt = handles[key];
+                    this.ctx.beginPath();
+                    this.ctx.rect(pt.x - 4, pt.y - 4, 8, 8);
+                    this.ctx.fill(); this.ctx.stroke();
+                }
+                this.ctx.restore();
+            }
+
+            drawGrid() {
+                const activeY = frameY; 
+                let activeX = (this.side === 'left') ? (CANVAS_WIDTH - frameWidth) : 0;
+
+                this.ctx.save();
+                this.ctx.beginPath();
+                this.ctx.rect(activeX, activeY, frameWidth, frameHeight);
+                this.ctx.clip();
+                this.ctx.translate(activeX, activeY);
+
+                const lightColor = "rgba(255, 255, 255, 0.4)";
+                const darkColor = "rgba(0, 0, 0, 0.5)";
+                const gridStroke = (gridColor === 'light') ? lightColor : darkColor;
+                this.ctx.strokeStyle = gridStroke; this.ctx.lineWidth = 0.5;
+                const step = 30; 
+                this.ctx.beginPath();
+                for (let x = step; x < frameWidth; x += step) { this.ctx.moveTo(x, 0); this.ctx.lineTo(x, frameHeight); }
+                for (let y = step; y < frameHeight; y += step) { this.ctx.moveTo(0, y); this.ctx.lineTo(frameWidth, y); }
+                this.ctx.stroke();
+
+                const mainGridColor = (gridColor === 'light') ? "rgba(255, 255, 255, 0.8)" : "rgba(0, 0, 0, 0.8)";
+                this.ctx.strokeStyle = mainGridColor; this.ctx.lineWidth = 1.5;
+                this.ctx.beginPath();
+                this.ctx.moveTo(frameWidth / 3, 0); this.ctx.lineTo(frameWidth / 3, frameHeight);
+                this.ctx.moveTo((frameWidth * 2) / 3, 0); this.ctx.lineTo((frameWidth * 2) / 3, frameHeight);
+                this.ctx.moveTo(0, frameHeight / 3); this.ctx.lineTo(frameWidth, frameHeight / 3);
+                this.ctx.moveTo(0, (frameHeight * 2) / 3); this.ctx.lineTo(frameWidth, (frameHeight * 2) / 3);
+                this.ctx.stroke();
+                this.ctx.restore();
+            }
+
+            drawFrameMask() {
+                // Đã loại bỏ điều kiện ẩn khung khi full màn hình để luôn hiển thị
+                
+                this.ctx.save();
+                this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; 
+                const topY = frameY;
+                const bottomY = frameY + frameHeight;
+                let activeX = (this.side === 'left') ? CANVAS_WIDTH - frameWidth : 0;
+
+                // 1. Mask Top
+                if (topY > 0) this.ctx.fillRect(0, 0, CANVAS_WIDTH, topY);
+                // 2. Mask Bottom
+                if (bottomY < CANVAS_HEIGHT) this.ctx.fillRect(0, bottomY, CANVAS_WIDTH, CANVAS_HEIGHT - bottomY);
+                // 3. Mask Side
+                if (this.side === 'left') {
+                    if (activeX > 0) this.ctx.fillRect(0, topY, activeX, frameHeight);
+                } else {
+                    const rightMaskX = activeX + frameWidth;
+                    if (rightMaskX < CANVAS_WIDTH) this.ctx.fillRect(rightMaskX, topY, CANVAS_WIDTH - rightMaskX, frameHeight);
+                }
+
+                if (isFrameLocked) {
+                    this.ctx.strokeStyle = "#6b7280"; 
+                    this.ctx.lineWidth = 2;
+                    this.ctx.setLineDash([5, 5]);
+                    this.ctx.strokeRect(activeX, topY, frameWidth, frameHeight);
+                } else {
+                    this.ctx.strokeStyle = "#fbbf24";
+                    this.ctx.lineWidth = 3;
+                    this.ctx.setLineDash([5, 5]);
+                    this.ctx.strokeRect(activeX, topY, frameWidth, frameHeight);
+                    
+                    this.ctx.fillStyle = "#fbbf24";
+                    this.ctx.setLineDash([]);
+                    const handleSize = 8;
+                    // Top Handle
+                    this.ctx.beginPath(); this.ctx.arc(activeX + frameWidth/2, topY, handleSize, 0, Math.PI*2); this.ctx.fill();
+                    
+                    if (this.side === 'left') {
+                        // Left Side Handle
+                        this.ctx.beginPath(); this.ctx.arc(activeX, topY + frameHeight/2, handleSize, 0, Math.PI*2); this.ctx.fill();
+                    } else {
+                        // Right Side Handle
+                        this.ctx.beginPath(); this.ctx.arc(activeX + frameWidth, topY + frameHeight/2, handleSize, 0, Math.PI*2); this.ctx.fill();
+                    }
+                }
+                this.ctx.restore();
+            }
+        }
+
+        const edit1 = new Editor('canvas1', 'wrapper1', 'upload1', 'rotateRange1', 'rotateInput1', 'placeholder1', 'left');
+        const edit2 = new Editor('canvas2', 'wrapper2', 'upload2', 'rotateRange2', 'rotateInput2', 'placeholder2', 'right');
+        
+        const modal = document.getElementById('previewModal');
+        const previewImg = document.getElementById('previewImage');
+        const exportGridCheck = document.getElementById('exportGridCheck');
+        const exportAxisCheck = document.getElementById('exportAxisCheck');
+        let currentDataUrl = '';
+
+        const lockBtn = document.getElementById('lockBtn');
+        const gridBtn = document.getElementById('gridBtn');
+        const gridColorBtn = document.getElementById('gridColorBtn');
+        const centerAxisBtn = document.getElementById('centerAxisBtn'); // Tham chiếu nút mới
+        
+        function toggleFrameLock() {
+            isFrameLocked = !isFrameLocked;
+            updateLockUI(); // Cập nhật UI
+            saveHistory(); // Lưu lịch sử khi đổi trạng thái khóa
+            
+            edit1.draw();
+            edit2.draw();
+        }
+
+        // Cập nhật hàm updateGlobalFrame để nhận tham số linh hoạt hơn
+        function updateGlobalFrame(w, h) {
+            if (isFrameLocked) return; 
+
+            if (w !== null) frameWidth = parseInt(w);
+            if (h !== null) {
+                frameHeight = parseInt(h);
+                // Khi thay đổi chiều cao, vì đáy cố định, đỉnh (Y) phải thay đổi
+                frameY = CANVAS_HEIGHT - frameHeight;
+            }
+            
+            edit1.draw();
+            edit2.draw();
+        }
+
+        function toggleGrid() {
+            showGrid = !showGrid;
+            if(showGrid) {
+                gridBtn.classList.add('text-blue-400', 'bg-gray-600');
+                gridBtn.classList.remove('text-gray-400');
+            } else {
+                gridBtn.classList.remove('text-blue-400', 'bg-gray-600');
+                gridBtn.classList.add('text-gray-400');
+            }
+            edit1.draw();
+            edit2.draw();
+        }
+
+        function toggleGridColor() {
+            gridColor = (gridColor === 'light') ? 'dark' : 'light';
+            const icon = gridColorBtn.querySelector('i');
+            if (gridColor === 'dark') {
+                icon.className = 'fa-solid fa-circle text-gray-900'; 
+                gridColorBtn.title = "Màu lưới: Tối";
+            } else {
+                icon.className = 'fa-solid fa-circle-half-stroke'; 
+                gridColorBtn.title = "Màu lưới: Sáng";
+            }
+            edit1.draw();
+            edit2.draw();
+        }
+
+        // Hàm Bật/Tắt Trục Giữa
+        function toggleCenterAxis() {
+            showCenterAxis = !showCenterAxis;
+            if(showCenterAxis) {
+                centerAxisBtn.classList.add('text-red-400', 'bg-gray-600');
+                centerAxisBtn.classList.remove('text-gray-400');
+            } else {
+                centerAxisBtn.classList.remove('text-red-400', 'bg-gray-600');
+                centerAxisBtn.classList.add('text-gray-400');
+            }
+            edit1.draw();
+            edit2.draw();
+        }
+
+        function exportImage() {
+            if(!edit1.isLoaded && !edit2.isLoaded) return alert("Chưa có ảnh nào!");
+            
+            includeGridInExport = false;
+            includeCenterAxisInExport = false;
+            exportGridCheck.checked = false;
+            exportAxisCheck.checked = false;
+            
+            updateResultImage();
+            modal.classList.remove('hidden');
+        }
+
+        // Cập nhật ảnh khi checkbox hoặc input text thay đổi
+        exportGridCheck.addEventListener('change', (e) => {
+            includeGridInExport = e.target.checked;
+            updateResultImage(); 
+        });
+        
+        exportAxisCheck.addEventListener('change', (e) => {
+            includeCenterAxisInExport = e.target.checked;
+            updateResultImage(); 
+        });
+
+        document.getElementById('label1Input').addEventListener('input', updateResultImage);
+        document.getElementById('label2Input').addEventListener('input', updateResultImage);
+
+        function updateResultImage() {
+            // srcY bắt đầu từ frameY
+            const srcY = frameY;
+            
+            // Tính toán chiều cao cho phần nhãn chữ
+            const fontSize = Math.max(24, frameWidth * 0.08); 
+            const labelAreaHeight = fontSize * 1.8; 
+
+            const outCanvas = document.createElement('canvas');
+            outCanvas.width = frameWidth * 2;
+            outCanvas.height = frameHeight + labelAreaHeight; 
+            const ctx = outCanvas.getContext('2d');
+
+            // Tô nền trắng toàn bộ
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(0, 0, outCanvas.width, outCanvas.height);
+
+            isExporting = true;
+            
+            edit1.draw();
+            edit2.draw();
+
+            const srcX1 = CANVAS_WIDTH - frameWidth;
+            ctx.drawImage(edit1.canvas, srcX1, srcY, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
+
+            const srcX2 = 0;
+            ctx.drawImage(edit2.canvas, srcX2, srcY, frameWidth, frameHeight, frameWidth, 0, frameWidth, frameHeight);
+
+            // --- VẼ NHÃN BEFORE / AFTER (Lấy từ Input) ---
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "#333"; 
+            
+            const labelY = frameHeight + (labelAreaHeight / 2);
+            
+            // Lấy giá trị từ input, nếu rỗng thì dùng mặc định
+            const label1Text = document.getElementById('label1Input').value || "BEFORE";
+            const label2Text = document.getElementById('label2Input').value || "AFTER";
+
+            ctx.fillText(label1Text, frameWidth / 2, labelY);
+            ctx.fillText(label2Text, frameWidth + (frameWidth / 2), labelY);
+            
+            // Vẽ đường kẻ dọc mờ ngăn cách (tùy chọn cho đẹp)
+            ctx.beginPath();
+            ctx.moveTo(frameWidth, frameHeight + 5);
+            ctx.lineTo(frameWidth, outCanvas.height - 5);
+            ctx.strokeStyle = "#e5e7eb";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            isExporting = false;
+            edit1.draw();
+            edit2.draw();
+
+            currentDataUrl = outCanvas.toDataURL('image/jpeg', 0.95);
+            previewImg.src = currentDataUrl;
+        }
+
+        function closePreview() {
+            modal.classList.add('hidden');
+            previewImg.src = ''; 
+        }
+
+        function confirmDownload() {
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().slice(0,19).replace(/[-T:]/g,"");
+            link.download = `Compare_${timestamp}.jpg`;
+            link.href = currentDataUrl;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            // Xử lý Undo (Ctrl+Z hoặc Cmd+Z)
+            // Cập nhật: Thêm điều kiện cho Redo (Ctrl+Shift+Z)
+            if ((e.ctrlKey || e.metaKey)) {
+                if (e.shiftKey && e.key.toLowerCase() === 'z') {
+                    e.preventDefault();
+                    redo();
+                    return;
+                }
+                if (e.key.toLowerCase() === 'z') {
+                    e.preventDefault();
+                    undo();
+                    return;
+                }
+            }
+
+            if (!activeEditor) return;
+            if (e.target.tagName === 'INPUT') return; 
+
+            let step = e.shiftKey ? 10 : 1;
+            let handled = false;
+            
+            switch(e.key) {
+                case 'ArrowUp': activeEditor.pan(0, -step); handled = true; break;
+                case 'ArrowDown': activeEditor.pan(0, step); handled = true; break;
+                case 'ArrowLeft': activeEditor.pan(-step, 0); handled = true; break;
+                case 'ArrowRight': activeEditor.pan(step, 0); handled = true; break;
+            }
+            
+            if (handled) e.preventDefault();
+        });
+
+        // Initial draw to show frame immediately
+        edit1.draw();
+        edit2.draw();
+
+        // Lưu trạng thái ban đầu
+        saveHistory();
+
+        // --- Tự động đồng bộ chiều rộng thanh điều khiển với khung ảnh ---
+        const stageContainer = document.getElementById('stageContainer');
+        const controlsArea = document.getElementById('controlsArea');
+
+        if (stageContainer && controlsArea) {
+            const resizeObserver = new ResizeObserver(entries => {
+                window.requestAnimationFrame(() => {
+                    for (let entry of entries) {
+                        if (!Array.isArray(entries) || !entries.length) return;
+                        // Lấy chính xác kích thước hiển thị của khung ảnh
+                        const rect = stageContainer.getBoundingClientRect();
+                        // Gán chiều rộng đó cho thanh điều khiển
+                        controlsArea.style.width = `${rect.width}px`;
+                    }
+                });
+            });
+            resizeObserver.observe(stageContainer);
+        }
+    </script>
+</body>
+</html>
