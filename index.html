@@ -95,6 +95,15 @@
         .font-brand {
             font-family: 'Merriweather', serif;
         }
+
+        /* Emoji Picker Scrollbar */
+        .emoji-grid::-webkit-scrollbar {
+            width: 4px;
+        }
+        .emoji-grid::-webkit-scrollbar-thumb {
+            background: #4b5563; 
+            border-radius: 4px;
+        }
     </style>
 </head>
 <!-- Sử dụng h-screen và overflow-hidden để khóa chiều cao trang web -->
@@ -143,6 +152,11 @@
                 <div class="flex gap-2 items-center">
                     <button onclick="toggleFrameLock()" id="lockBtn" class="bg-gray-700 hover:bg-gray-600 text-green-400 px-3 py-1.5 rounded-md text-xs md:text-sm transition border border-green-500/30 flex items-center gap-1 md:gap-2 font-medium whitespace-nowrap">
                         <i class="fa-solid fa-lock-open"></i> <span class="hidden sm:inline">Mở Khóa</span>
+                    </button>
+
+                    <!-- Emoji Button -->
+                    <button onclick="toggleEmojiPicker()" id="emojiBtn" class="bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1.5 rounded-md text-xs md:text-sm shadow transition flex items-center gap-2" title="Thêm Sticker">
+                        <i class="fa-solid fa-face-smile"></i>
                     </button>
 
                     <!-- Grid Controls Group -->
@@ -224,6 +238,8 @@
                 <span class="flex items-center gap-1"><i class="fa-regular fa-hand-pointer text-gray-400"></i> Click hình & Dùng phím Mũi tên</span>
                 <span class="flex items-center gap-1"><i class="fa-solid fa-rotate-left text-gray-400"></i> Ctrl+Z: Undo</span>
                 <span class="flex items-center gap-1"><i class="fa-solid fa-rotate-right text-gray-400"></i> Ctrl+Shift+Z: Redo</span>
+                <span class="flex items-center gap-1"><i class="fa-solid fa-face-smile text-yellow-500"></i> Kéo góc Sticker để Zoom</span>
+                <span class="flex items-center gap-1"><i class="fa-solid fa-trash-can text-red-500"></i> Chọn Sticker + Delete để xóa</span>
             </p>
         </div>
     </main>
@@ -275,11 +291,38 @@
         </div>
     </div>
 
+    <!-- Emoji Picker Dropdown (Moved to Body for fixed positioning) -->
+    <div id="emojiPicker" class="hidden fixed z-[100] bg-gray-800 border border-gray-600 rounded-lg shadow-xl p-2 w-64">
+        <div class="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto emoji-grid">
+            <!-- Common Masks -->
+            <button onclick="addEmoji('🌸')" class="text-2xl hover:bg-gray-700 p-1 rounded">🌸</button>
+            <button onclick="addEmoji('🌼')" class="text-2xl hover:bg-gray-700 p-1 rounded">🌼</button>
+            <button onclick="addEmoji('🌻')" class="text-2xl hover:bg-gray-700 p-1 rounded">🌻</button>
+            <button onclick="addEmoji('❤️')" class="text-2xl hover:bg-gray-700 p-1 rounded">❤️</button>
+            <button onclick="addEmoji('⭐')" class="text-2xl hover:bg-gray-700 p-1 rounded">⭐</button>
+            <button onclick="addEmoji('😎')" class="text-2xl hover:bg-gray-700 p-1 rounded">😎</button>
+            <button onclick="addEmoji('😷')" class="text-2xl hover:bg-gray-700 p-1 rounded">😷</button>
+            <button onclick="addEmoji('🤡')" class="text-2xl hover:bg-gray-700 p-1 rounded">🤡</button>
+            <button onclick="addEmoji('🐱')" class="text-2xl hover:bg-gray-700 p-1 rounded">🐱</button>
+            <button onclick="addEmoji('🐶')" class="text-2xl hover:bg-gray-700 p-1 rounded">🐶</button>
+            <button onclick="addEmoji('🐸')" class="text-2xl hover:bg-gray-700 p-1 rounded">🐸</button>
+            <button onclick="addEmoji('🍑')" class="text-2xl hover:bg-gray-700 p-1 rounded">🍑</button>
+            <button onclick="addEmoji('🍄')" class="text-2xl hover:bg-gray-700 p-1 rounded">🍄</button>
+            <button onclick="addEmoji('🎀')" class="text-2xl hover:bg-gray-700 p-1 rounded">🎀</button>
+            <button onclick="addEmoji('👑')" class="text-2xl hover:bg-gray-700 p-1 rounded">👑</button>
+            <button onclick="addEmoji('🔥')" class="text-2xl hover:bg-gray-700 p-1 rounded">🔥</button>
+            <button onclick="addEmoji('✨')" class="text-2xl hover:bg-gray-700 p-1 rounded">✨</button>
+            <button onclick="addEmoji('🚫')" class="text-2xl hover:bg-gray-700 p-1 rounded">🚫</button>
+            <button onclick="addEmoji('⬛')" class="text-2xl hover:bg-gray-700 p-1 rounded" title="Che đen">⬛</button>
+            <button onclick="addEmoji('⬜')" class="text-2xl hover:bg-gray-700 p-1 rounded" title="Che trắng">⬜</button>
+        </div>
+    </div>
+
     <script>
         const CANVAS_WIDTH = 540;
         const CANVAS_HEIGHT = 960;
         let showGrid = false;
-        let showCenterAxis = true; // Mặc định hiển thị trục giữa
+        let showCenterAxis = true; 
         let gridColor = 'light'; 
         let frameWidth = 540;
         let frameHeight = 960;
@@ -290,17 +333,20 @@
         let isExporting = false;
         let isFrameLocked = false; 
         let includeGridInExport = false; 
-        let includeCenterAxisInExport = false; // Mặc định tắt trục giữa khi xuất ảnh
+        let includeCenterAxisInExport = false; 
         
         let activeEditor = null;
 
         // --- HỆ THỐNG LỊCH SỬ (UNDO/REDO) ---
         const historyStack = [];
-        const redoStack = []; // Stack cho Redo
+        const redoStack = []; 
         const MAX_HISTORY = 50;
 
         function saveHistory() {
-            // Sao chép trạng thái hiện tại
+            // Deep copy stickers
+            const edit1Stickers = edit1.stickers.map(s => ({...s}));
+            const edit2Stickers = edit2.stickers.map(s => ({...s}));
+
             const state = {
                 frameWidth,
                 frameHeight,
@@ -308,15 +354,16 @@
                 isFrameLocked,
                 edit1: {
                     crop: { ...edit1.crop },
-                    state: { ...edit1.state }
+                    state: { ...edit1.state },
+                    stickers: edit1Stickers
                 },
                 edit2: {
                     crop: { ...edit2.crop },
-                    state: { ...edit2.state }
+                    state: { ...edit2.state },
+                    stickers: edit2Stickers
                 }
             };
             
-            // Tránh lưu trạng thái trùng lặp
             if (historyStack.length > 0) {
                 const last = JSON.stringify(historyStack[historyStack.length - 1]);
                 const current = JSON.stringify(state);
@@ -325,27 +372,21 @@
 
             historyStack.push(state);
             if (historyStack.length > MAX_HISTORY) historyStack.shift();
-            
-            // Khi có hành động mới, xóa lịch sử Redo
             redoStack.length = 0;
         }
 
         function undo() {
-            if (historyStack.length <= 1) return; // Luôn giữ lại trạng thái ban đầu
-            
-            const currentState = historyStack.pop(); // Lấy trạng thái hiện tại ra
-            redoStack.push(currentState); // Lưu vào stack Redo
-            
-            const prevState = historyStack[historyStack.length - 1]; // Lấy trạng thái trước đó
+            if (historyStack.length <= 1) return;
+            const currentState = historyStack.pop();
+            redoStack.push(currentState);
+            const prevState = historyStack[historyStack.length - 1];
             restoreState(prevState);
         }
 
         function redo() {
-            if (redoStack.length === 0) return; // Không có gì để Redo
-            
-            const nextState = redoStack.pop(); // Lấy trạng thái từ stack Redo
-            historyStack.push(nextState); // Đẩy lại vào stack History
-            
+            if (redoStack.length === 0) return;
+            const nextState = redoStack.pop();
+            historyStack.push(nextState);
             restoreState(nextState);
         }
 
@@ -355,18 +396,18 @@
             frameY = state.frameY;
             isFrameLocked = state.isFrameLocked;
             
-            // Cập nhật giao diện nút khóa
             updateLockUI();
 
-            // Khôi phục editor 1
             edit1.crop = { ...state.edit1.crop };
             edit1.state = { ...state.edit1.state };
+            edit1.stickers = state.edit1.stickers.map(s => ({...s}));
+            edit1.interaction.stickerIndex = -1; // Reset selection on undo
             
-            // Khôi phục editor 2
             edit2.crop = { ...state.edit2.crop };
             edit2.state = { ...state.edit2.state };
+            edit2.stickers = state.edit2.stickers.map(s => ({...s}));
+            edit2.interaction.stickerIndex = -1; // Reset selection on undo
             
-            // Cập nhật thanh trượt và vẽ lại
             edit1.updateControls();
             edit2.updateControls();
             
@@ -374,7 +415,6 @@
             edit2.draw();
         }
 
-        // Helper cập nhật UI nút khóa
         function updateLockUI() {
             if (isFrameLocked) {
                 lockBtn.innerHTML = '<i class="fa-solid fa-lock"></i> <span class="hidden sm:inline">Đã Khóa</span>';
@@ -403,8 +443,10 @@
                 this.isLoaded = false;
                 
                 this.crop = { t: 0, b: 0, l: 0, r: 0 };
-                
                 this.state = { x: CANVAS_WIDTH/2, y: CANVAS_HEIGHT/2, scale: 1, angle: 0 };
+                this.stickers = []; 
+                this.selectedStickerIndex = -1;
+
                 this.drag = { isDragging: false, lastX: 0, lastY: 0 };
                 
                 this.interaction = { 
@@ -413,18 +455,53 @@
                     startDist: 0, 
                     startScale: 1,
                     anchorCanvas: { x: 0, y: 0 },
-                    cropStart: 0 
+                    cropStart: 0,
+                    stickerIndex: -1,
+                    stickerHandle: null
                 };
 
                 this.initEvents(uploadId);
             }
 
-            // --- HELPER PHÍM MŨI TÊN ---
+            addSticker(emoji) {
+                if (!this.isLoaded) {
+                    alert("Vui lòng tải ảnh lên trước khi thêm Sticker!");
+                    return;
+                }
+                
+                // TỰ ĐỘNG TÍNH TOÁN KÍCH THƯỚC STICKER
+                const baseFontSize = 100; // Font size cơ bản trong draw()
+                const targetScreenSize = CANVAS_WIDTH / 5; // Kích thước mong muốn trên màn hình (~108px)
+                
+                let autoScale = targetScreenSize / (baseFontSize * this.state.scale);
+                if (autoScale < 0.1) autoScale = 0.1;
+                
+                this.stickers.push({
+                    text: emoji,
+                    x: 0, // Tâm ảnh
+                    y: 0,
+                    scale: autoScale,
+                    angle: 0
+                });
+                this.interaction.stickerIndex = this.stickers.length - 1; 
+                saveHistory();
+                this.draw();
+            }
+
+            deleteSelectedSticker() {
+                if (this.interaction.stickerIndex !== -1 && this.interaction.stickerIndex < this.stickers.length) {
+                    this.stickers.splice(this.interaction.stickerIndex, 1);
+                    this.interaction.stickerIndex = -1;
+                    saveHistory();
+                    this.draw();
+                }
+            }
+
             pan(dx, dy) {
                 if (!this.isLoaded) return;
                 this.state.x += dx;
                 this.state.y += dy;
-                saveHistory(); // Lưu lịch sử khi dùng phím mũi tên
+                saveHistory();
                 this.draw();
             }
 
@@ -508,7 +585,50 @@
             checkHit(x, y) {
                 const margin = 20; 
                 
-                // 1. Frame Hit Test
+                if (this.isLoaded) {
+                    // 0. ƯU TIÊN 1: Kiểm tra tay nắm resize của Sticker đang chọn TRƯỚC TIÊN (Sử dụng toạ độ Màn hình Canvas)
+                    if (this.interaction.stickerIndex !== -1 && this.interaction.stickerIndex < this.stickers.length) {
+                        const i = this.interaction.stickerIndex;
+                        const s = this.stickers[i];
+                        const size = 100 * s.scale;
+                        const half = size / 2;
+                        
+                        // Lấy 4 góc trong hệ toạ độ Local
+                        const cornersLocal = [
+                            { x: s.x - half, y: s.y - half },
+                            { x: s.x + half, y: s.y - half },
+                            { x: s.x + half, y: s.y + half },
+                            { x: s.x - half, y: s.y + half }
+                        ];
+
+                        // Chuyển 4 góc về hệ toạ độ Màn hình (Canvas Screen Space)
+                        // Bằng cách này, vùng hit sẽ luôn cố định theo pixel màn hình, không bị ảnh hưởng bởi zoom ảnh
+                        const screenCorners = cornersLocal.map(p => this.transformPoint(p.x, p.y, this.state.scale, this.state.angle, this.state.x, this.state.y));
+                        
+                        // Vùng bấm cố định 20px trên màn hình (theo yêu cầu)
+                        const HIT_RADIUS_SCREEN = 20;
+
+                        // Tìm góc gần nhất trong vùng bấm
+                        let minCornerDist = HIT_RADIUS_SCREEN;
+                        let bestHandle = -1;
+
+                        for (let k = 0; k < screenCorners.length; k++) {
+                            const corner = screenCorners[k];
+                            // Tính khoảng cách chuột (x,y) tới góc trên màn hình
+                            const dist = Math.sqrt((x - corner.x)**2 + (y - corner.y)**2);
+                            if (dist < minCornerDist) {
+                                minCornerDist = dist;
+                                bestHandle = k;
+                            }
+                        }
+                        
+                        if (bestHandle !== -1) {
+                            return { type: 'sticker-resize', index: i, handle: bestHandle }; // k là index của góc
+                        }
+                    }
+                }
+
+                // 1. Frame Hit Test (Screen Space)
                 if (!isFrameLocked) {
                     const topY = frameY;
                     let edgeX = (this.side === 'left') ? (CANVAS_WIDTH - frameWidth) : frameWidth;
@@ -522,6 +642,17 @@
                 }
 
                 if (this.isLoaded) {
+                    // Sticker Body Hit Test (Local space)
+                    const localPt = this.getInverseTransformedPoint(x, y);
+                    for (let i = this.stickers.length - 1; i >= 0; i--) {
+                        const s = this.stickers[i];
+                        const size = 100 * s.scale;
+                        if (localPt.x >= s.x - size/2 && localPt.x <= s.x + size/2 &&
+                            localPt.y >= s.y - size/2 && localPt.y <= s.y + size/2) {
+                            return { type: 'sticker', index: i };
+                        }
+                    }
+
                     // 2. Crop Handles
                     const cropHandles = this.getCropHandles();
                     for (let key in cropHandles) {
@@ -537,11 +668,9 @@
                         if (dist < margin) return { type: 'image-corner', index: i };
                     }
 
-                    // 4. CHECK INSIDE IMAGE FOR PAN
-                    const localPt = this.getInverseTransformedPoint(x, y);
+                    // 4. Pan
                     const w = this.img.width;
                     const h = this.img.height;
-                    
                     const l = -w/2 + this.crop.l;
                     const r = w/2 - this.crop.r;
                     const t = -h/2 + this.crop.t;
@@ -568,7 +697,7 @@
                             this.placeholder.style.display = 'none';
                             this.resetView();
                             this.setActive(); 
-                            saveHistory(); // Lưu lịch sử khi ảnh mới load xong
+                            saveHistory(); 
                         }
                     };
                     reader.readAsDataURL(file);
@@ -583,7 +712,6 @@
                     this.draw();
                 };
 
-                // Lắng nghe sự kiện change để lưu lịch sử khi dừng kéo thanh trượt
                 if(this.rotateRange) {
                     this.rotateRange.addEventListener('input', (e) => updateRotate(e.target.value));
                     this.rotateRange.addEventListener('change', () => saveHistory());
@@ -599,6 +727,7 @@
                 const start = (e) => {
                     this.setActive();
                     if (e.cancelable && !this.isLoaded) return;
+                    
                     const coords = this.getCanvasCoords(e);
                     const hit = this.checkHit(coords.x, coords.y);
                     this.interaction.active = true;
@@ -606,7 +735,42 @@
                     this.drag.lastX = e.touches ? e.touches[0].clientX : e.clientX;
                     this.drag.lastY = e.touches ? e.touches[0].clientY : e.clientY;
 
-                    if (hit.type === 'crop-handle') {
+                    // Deselect if clicking elsewhere
+                    if (hit.type !== 'sticker' && hit.type !== 'sticker-resize') {
+                        this.interaction.stickerIndex = -1;
+                    }
+
+                    if (hit.type === 'sticker') {
+                        this.interaction.stickerIndex = hit.index;
+                        this.draw();
+                    }
+                    else if (hit.type === 'sticker-resize') {
+                        this.interaction.stickerIndex = hit.index;
+                        this.interaction.stickerHandle = hit.handle;
+                        
+                        // Calculate initial distance from center to mouse for scaling reference
+                        const localPt = this.getInverseTransformedPoint(coords.x, coords.y);
+                        const s = this.stickers[hit.index];
+                        this.interaction.startDist = Math.sqrt((localPt.x - s.x)**2 + (localPt.y - s.y)**2);
+                        this.interaction.startScale = s.scale;
+                        
+                        // Cập nhật Anchor Point (điểm đối diện) trong Local Space
+                        // Handle order: 0: TL, 1: TR, 2: BR, 3: BL
+                        // Anchor order: 2: BR, 3: BL, 0: TL, 1: TR
+                        const size = 100 * s.scale;
+                        const half = size / 2;
+                        const cornersLocal = [
+                            { x: s.x - half, y: s.y - half },
+                            { x: s.x + half, y: s.y - half },
+                            { x: s.x + half, y: s.y + half },
+                            { x: s.x - half, y: s.y + half }
+                        ];
+                        const anchorIdx = (hit.handle + 2) % 4;
+                        this.interaction.anchorLocal = cornersLocal[anchorIdx];
+
+                        this.draw();
+                    }
+                    else if (hit.type === 'crop-handle') {
                         this.interaction.cropSide = hit.side;
                     }
                     else if (hit.type === 'image-corner') {
@@ -628,13 +792,18 @@
                         this.canvas.style.cursor = 'grabbing';
                         if(e.cancelable) e.preventDefault();
                     }
+                    
+                    // Redraw to show selection immediately
+                    this.draw();
                 };
 
                 const move = (e) => {
                     const coords = this.getCanvasCoords(e);
                     if (!this.interaction.active) {
                         const hit = this.checkHit(coords.x, coords.y);
-                        if (hit.type.startsWith('frame')) {
+                        if (hit.type === 'sticker') this.canvas.style.cursor = 'move';
+                        else if (hit.type === 'sticker-resize') this.canvas.style.cursor = 'nwse-resize';
+                        else if (hit.type.startsWith('frame')) {
                             if (hit.type.includes('corner')) this.canvas.style.cursor = 'nwse-resize';
                             else if (hit.type.includes('side')) this.canvas.style.cursor = 'ew-resize';
                             else this.canvas.style.cursor = 'ns-resize';
@@ -652,8 +821,41 @@
                         if(e.cancelable) e.preventDefault();
                         const type = this.interaction.type;
                         
+                        // STICKER DRAG
+                        if (type === 'sticker') {
+                            const mouseLocal = this.getInverseTransformedPoint(coords.x, coords.y);
+                            this.stickers[this.interaction.stickerIndex].x = mouseLocal.x;
+                            this.stickers[this.interaction.stickerIndex].y = mouseLocal.y;
+                            this.draw();
+                        }
+                        // STICKER RESIZE
+                        else if (type === 'sticker-resize') {
+                            const s = this.stickers[this.interaction.stickerIndex];
+                            
+                            // Sử dụng logic Anchor-based scaling
+                            const anchorLocal = this.interaction.anchorLocal;
+                            const mouseLocal = this.getInverseTransformedPoint(coords.x, coords.y);
+                            
+                            // Tính khoảng cách mới giữa chuột và anchor
+                            const newDist = Math.sqrt((mouseLocal.x - anchorLocal.x)**2 + (mouseLocal.y - anchorLocal.y)**2);
+                            
+                            // Tính scale mới:
+                            // DiagonalLength = 100 * scale * sqrt(2)
+                            // => Scale = DiagonalLength / (100 * sqrt(2))
+                            
+                            let newScale = newDist / (100 * Math.sqrt(2));
+
+                            if (newScale < 0.1) newScale = 0.1;
+                            s.scale = newScale;
+
+                            // Cập nhật tâm mới: Là trung điểm của Anchor và Mouse
+                            s.x = (anchorLocal.x + mouseLocal.x) / 2;
+                            s.y = (anchorLocal.y + mouseLocal.y) / 2;
+
+                            this.draw();
+                        }
                         // CROP
-                        if (type === 'crop-handle') {
+                        else if (type === 'crop-handle') {
                             const side = this.interaction.cropSide;
                             const localPt = this.getInverseTransformedPoint(coords.x, coords.y);
                             const w = this.img.width; const h = this.img.height;
@@ -738,13 +940,17 @@
                 };
 
                 const end = () => {
-                    // Nếu vừa mới tương tác xong (có thay đổi), thì lưu lịch sử
                     if (this.interaction.active) {
                         this.interaction.active = false;
                         saveHistory(); 
                     }
                     this.interaction.type = 'none';
+                    // Đã bỏ dòng reset stickerIndex = -1 để giữ chọn
                     this.canvas.style.cursor = 'grab';
+                };
+
+                const wheel = (e) => {
+                    // Wheel disabled for sticker zoom as per request
                 };
 
                 this.canvas.addEventListener('mousedown', start);
@@ -753,26 +959,18 @@
                 this.canvas.addEventListener('touchstart', start, {passive: false});
                 window.addEventListener('touchmove', move, {passive: false});
                 window.addEventListener('touchend', end);
+                this.canvas.addEventListener('wheel', wheel, {passive: false});
             }
 
             resetView() {
-                // Tính toán tâm của khung hình hiện tại
                 let activeX = (this.side === 'left') ? (CANVAS_WIDTH - frameWidth) : 0;
                 let activeY = frameY;
-                
-                // Đặt ảnh vào giữa khung
                 this.state.x = activeX + frameWidth / 2;
                 this.state.y = activeY + frameHeight / 2;
-                
                 this.state.angle = 0;
-                
-                // Tính scale để fit vào khung (Contain)
                 const rW = frameWidth / this.img.width;
                 const rH = frameHeight / this.img.height;
-                
-                // Chọn tỷ lệ nhỏ hơn để đảm bảo toàn bộ ảnh nằm trong khung
                 this.state.scale = Math.min(rW, rH); 
-                
                 this.updateControls();
                 this.draw();
             }
@@ -798,6 +996,18 @@
                     const dX = -this.img.width/2 + this.crop.l;
                     const dY = -this.img.height/2 + this.crop.t;
                     this.ctx.drawImage(this.img, sX, sY, sW, sH, dX, dY, sW, sH);
+                    
+                    // Draw Stickers (in image space)
+                    this.stickers.forEach(s => {
+                        this.ctx.save();
+                        this.ctx.translate(s.x, s.y);
+                        this.ctx.font = `${100 * s.scale}px sans-serif`;
+                        this.ctx.textAlign = 'center';
+                        this.ctx.textBaseline = 'middle';
+                        this.ctx.fillText(s.text, 0, 0);
+                        this.ctx.restore();
+                    });
+
                     this.ctx.restore();
                     
                     if (!isExporting) {
@@ -809,25 +1019,73 @@
                 const shouldDrawGrid = showGrid && (!isExporting || includeGridInExport);
                 if (shouldDrawGrid) this.drawGrid();
                 
-                // Logic vẽ trục giữa:
-                // 1. Không export: vẽ nếu showCenterAxis bật
-                // 2. Có export: vẽ nếu includeCenterAxisInExport bật
                 if (!isExporting) {
                     this.drawFrameMask();
+                    // Draw Sticker Controls LAST so they appear ON TOP of the mask
+                    this.drawStickerControls();
                     if(showCenterAxis) this.drawCenterAxis(); 
                 } else {
                     if(includeCenterAxisInExport) this.drawCenterAxis();
                 }
             }
 
+            drawStickerControls() {
+                if (this.interaction.stickerIndex === -1 || this.interaction.stickerIndex >= this.stickers.length) return;
+                
+                const s = this.stickers[this.interaction.stickerIndex];
+                const size = 100 * s.scale;
+                const half = size / 2;
+                
+                // Get corners in Local space
+                const corners = [
+                    { x: s.x - half, y: s.y - half }, // TL
+                    { x: s.x + half, y: s.y - half }, // TR
+                    { x: s.x + half, y: s.y + half }, // BR
+                    { x: s.x - half, y: s.y + half }  // BL
+                ];
+
+                // Transform to Screen Space
+                const screenCorners = corners.map(p => this.transformPoint(p.x, p.y, this.state.scale, this.state.angle, this.state.x, this.state.y));
+
+                this.ctx.save();
+                this.ctx.strokeStyle = "#fbbf24"; // Yellow border
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([5, 5]);
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(screenCorners[0].x, screenCorners[0].y);
+                this.ctx.lineTo(screenCorners[1].x, screenCorners[1].y);
+                this.ctx.lineTo(screenCorners[2].x, screenCorners[2].y);
+                this.ctx.lineTo(screenCorners[3].x, screenCorners[3].y);
+                this.ctx.closePath();
+                this.ctx.stroke();
+
+                // Draw Corner Handles
+                this.ctx.setLineDash([]);
+                this.ctx.fillStyle = "#ffffff"; // White fill
+                this.ctx.strokeStyle = "#fbbf24"; // Yellow border
+                this.ctx.lineWidth = 2; // Thicker border
+                
+                screenCorners.forEach(p => {
+                    this.ctx.beginPath();
+                    // Kích thước chấm tròn 3px
+                    this.ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                });
+
+                this.ctx.restore();
+            }
+
+            // ... (keep remaining methods drawCenterAxis, drawImageHandles, drawCropHandles, drawGrid, drawFrameMask) ...
             drawCenterAxis() {
                 const activeY = frameY;
                 let activeX = (this.side === 'left') ? (CANVAS_WIDTH - frameWidth) : 0;
                 const centerX = activeX + frameWidth / 2;
 
                 this.ctx.save();
-                this.ctx.strokeStyle = "red"; // Màu đỏ
-                this.ctx.lineWidth = 1;       // Mỏng
+                this.ctx.strokeStyle = "red"; 
+                this.ctx.lineWidth = 1;       
                 this.ctx.beginPath();
                 this.ctx.moveTo(centerX, activeY);
                 this.ctx.lineTo(centerX, activeY + frameHeight);
@@ -840,7 +1098,8 @@
                 this.ctx.save();
                 this.ctx.fillStyle = "#3b82f6"; this.ctx.strokeStyle = "white"; this.ctx.lineWidth = 2;
                 for (let pt of corners) {
-                    this.ctx.beginPath(); this.ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+                    this.ctx.beginPath();
+                    this.ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
                     this.ctx.fill(); this.ctx.stroke();
                 }
                 this.ctx.restore();
@@ -891,19 +1150,14 @@
             }
 
             drawFrameMask() {
-                // Đã loại bỏ điều kiện ẩn khung khi full màn hình để luôn hiển thị
-                
                 this.ctx.save();
                 this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; 
                 const topY = frameY;
                 const bottomY = frameY + frameHeight;
                 let activeX = (this.side === 'left') ? CANVAS_WIDTH - frameWidth : 0;
 
-                // 1. Mask Top
                 if (topY > 0) this.ctx.fillRect(0, 0, CANVAS_WIDTH, topY);
-                // 2. Mask Bottom
                 if (bottomY < CANVAS_HEIGHT) this.ctx.fillRect(0, bottomY, CANVAS_WIDTH, CANVAS_HEIGHT - bottomY);
-                // 3. Mask Side
                 if (this.side === 'left') {
                     if (activeX > 0) this.ctx.fillRect(0, topY, activeX, frameHeight);
                 } else {
@@ -925,14 +1179,11 @@
                     this.ctx.fillStyle = "#fbbf24";
                     this.ctx.setLineDash([]);
                     const handleSize = 8;
-                    // Top Handle
                     this.ctx.beginPath(); this.ctx.arc(activeX + frameWidth/2, topY, handleSize, 0, Math.PI*2); this.ctx.fill();
                     
                     if (this.side === 'left') {
-                        // Left Side Handle
                         this.ctx.beginPath(); this.ctx.arc(activeX, topY + frameHeight/2, handleSize, 0, Math.PI*2); this.ctx.fill();
                     } else {
-                        // Right Side Handle
                         this.ctx.beginPath(); this.ctx.arc(activeX + frameWidth, topY + frameHeight/2, handleSize, 0, Math.PI*2); this.ctx.fill();
                     }
                 }
@@ -952,25 +1203,76 @@
         const lockBtn = document.getElementById('lockBtn');
         const gridBtn = document.getElementById('gridBtn');
         const gridColorBtn = document.getElementById('gridColorBtn');
-        const centerAxisBtn = document.getElementById('centerAxisBtn'); // Tham chiếu nút mới
+        const centerAxisBtn = document.getElementById('centerAxisBtn'); 
         
+        // Emoji Picker Logic
+        const emojiPicker = document.getElementById('emojiPicker');
+        
+        // Make functions global
+        window.toggleEmojiPicker = function() {
+            const picker = document.getElementById('emojiPicker');
+            const btn = document.getElementById('emojiBtn');
+            
+            if (picker.classList.contains('hidden')) {
+                // Get button position
+                const rect = btn.getBoundingClientRect();
+                
+                // Position below button
+                picker.style.top = (rect.bottom + 10) + 'px';
+                
+                // Try to align right edge with button right edge, but keep on screen
+                const rightSpace = window.innerWidth - rect.right;
+                
+                // If on very small screen, align left
+                if (window.innerWidth < 300) {
+                     picker.style.left = '10px';
+                     picker.style.right = 'auto';
+                } else {
+                     // Normally align right to prevent overflow
+                     picker.style.right = (rightSpace > 10 ? rightSpace : 10) + 'px';
+                     picker.style.left = 'auto';
+                }
+
+                picker.classList.remove('hidden');
+            } else {
+                picker.classList.add('hidden');
+            }
+        }
+        
+        window.addEmoji = function(emoji) {
+            if (activeEditor) {
+                activeEditor.addSticker(emoji);
+                const picker = document.getElementById('emojiPicker');
+                picker.classList.add('hidden');
+            } else {
+                alert("Vui lòng chọn một khung ảnh (Trái/Phải) để thêm Sticker!");
+            }
+        }
+        
+        // Click outside to close picker
+        document.addEventListener('click', (e) => {
+            const btn = document.getElementById('emojiBtn');
+            const picker = document.getElementById('emojiPicker');
+            if (!picker.contains(e.target) && !btn.contains(e.target)) {
+                picker.classList.add('hidden');
+            }
+        });
+
         function toggleFrameLock() {
             isFrameLocked = !isFrameLocked;
-            updateLockUI(); // Cập nhật UI
-            saveHistory(); // Lưu lịch sử khi đổi trạng thái khóa
+            updateLockUI(); 
+            saveHistory(); 
             
             edit1.draw();
             edit2.draw();
         }
 
-        // Cập nhật hàm updateGlobalFrame để nhận tham số linh hoạt hơn
         function updateGlobalFrame(w, h) {
             if (isFrameLocked) return; 
 
             if (w !== null) frameWidth = parseInt(w);
             if (h !== null) {
                 frameHeight = parseInt(h);
-                // Khi thay đổi chiều cao, vì đáy cố định, đỉnh (Y) phải thay đổi
                 frameY = CANVAS_HEIGHT - frameHeight;
             }
             
@@ -1005,7 +1307,6 @@
             edit2.draw();
         }
 
-        // Hàm Bật/Tắt Trục Giữa
         function toggleCenterAxis() {
             showCenterAxis = !showCenterAxis;
             if(showCenterAxis) {
@@ -1031,7 +1332,6 @@
             modal.classList.remove('hidden');
         }
 
-        // Cập nhật ảnh khi checkbox hoặc input text thay đổi
         exportGridCheck.addEventListener('change', (e) => {
             includeGridInExport = e.target.checked;
             updateResultImage(); 
@@ -1046,10 +1346,7 @@
         document.getElementById('label2Input').addEventListener('input', updateResultImage);
 
         function updateResultImage() {
-            // srcY bắt đầu từ frameY
             const srcY = frameY;
-            
-            // Tính toán chiều cao cho phần nhãn chữ
             const fontSize = Math.max(24, frameWidth * 0.08); 
             const labelAreaHeight = fontSize * 1.8; 
 
@@ -1058,7 +1355,6 @@
             outCanvas.height = frameHeight + labelAreaHeight; 
             const ctx = outCanvas.getContext('2d');
 
-            // Tô nền trắng toàn bộ
             ctx.fillStyle = "#fff";
             ctx.fillRect(0, 0, outCanvas.width, outCanvas.height);
 
@@ -1073,7 +1369,6 @@
             const srcX2 = 0;
             ctx.drawImage(edit2.canvas, srcX2, srcY, frameWidth, frameHeight, frameWidth, 0, frameWidth, frameHeight);
 
-            // --- VẼ NHÃN BEFORE / AFTER (Lấy từ Input) ---
             ctx.font = `bold ${fontSize}px sans-serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -1081,14 +1376,12 @@
             
             const labelY = frameHeight + (labelAreaHeight / 2);
             
-            // Lấy giá trị từ input, nếu rỗng thì dùng mặc định
             const label1Text = document.getElementById('label1Input').value || "BEFORE";
             const label2Text = document.getElementById('label2Input').value || "AFTER";
 
             ctx.fillText(label1Text, frameWidth / 2, labelY);
             ctx.fillText(label2Text, frameWidth + (frameWidth / 2), labelY);
             
-            // Vẽ đường kẻ dọc mờ ngăn cách (tùy chọn cho đẹp)
             ctx.beginPath();
             ctx.moveTo(frameWidth, frameHeight + 5);
             ctx.lineTo(frameWidth, outCanvas.height - 5);
@@ -1121,8 +1414,6 @@
         }
 
         window.addEventListener('keydown', (e) => {
-            // Xử lý Undo (Ctrl+Z hoặc Cmd+Z)
-            // Cập nhật: Thêm điều kiện cho Redo (Ctrl+Shift+Z)
             if ((e.ctrlKey || e.metaKey)) {
                 if (e.shiftKey && e.key.toLowerCase() === 'z') {
                     e.preventDefault();
@@ -1139,6 +1430,13 @@
             if (!activeEditor) return;
             if (e.target.tagName === 'INPUT') return; 
 
+            // NEW: Delete key handler
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                activeEditor.deleteSelectedSticker();
+                e.preventDefault();
+                return;
+            }
+
             let step = e.shiftKey ? 10 : 1;
             let handled = false;
             
@@ -1152,14 +1450,11 @@
             if (handled) e.preventDefault();
         });
 
-        // Initial draw to show frame immediately
         edit1.draw();
         edit2.draw();
 
-        // Lưu trạng thái ban đầu
         saveHistory();
 
-        // --- Tự động đồng bộ chiều rộng thanh điều khiển với khung ảnh ---
         const stageContainer = document.getElementById('stageContainer');
         const controlsArea = document.getElementById('controlsArea');
 
@@ -1168,9 +1463,7 @@
                 window.requestAnimationFrame(() => {
                     for (let entry of entries) {
                         if (!Array.isArray(entries) || !entries.length) return;
-                        // Lấy chính xác kích thước hiển thị của khung ảnh
                         const rect = stageContainer.getBoundingClientRect();
-                        // Gán chiều rộng đó cho thanh điều khiển
                         controlsArea.style.width = `${rect.width}px`;
                     }
                 });
