@@ -106,7 +106,6 @@
         }
     </style>
 </head>
-<!-- Sử dụng h-screen và overflow-hidden để khóa chiều cao trang web -->
 <body class="bg-gray-900 text-gray-200 h-screen flex flex-col font-sans overflow-hidden">
 
     <!-- Datalist cho điểm trung tâm -->
@@ -174,9 +173,26 @@
                             <i class="fa-solid fa-ruler-vertical"></i>
                         </button>
                     </div>
+
+                    <!-- Project File Controls -->
+                    <div class="flex items-center">
+                         <button onclick="openSaveModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-md text-xs md:text-sm shadow transition flex items-center gap-2 whitespace-nowrap ml-1" title="Lưu file dự án về máy">
+                            <i class="fa-solid fa-file-export"></i>
+                        </button>
+                        
+                        <label class="cursor-pointer bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-md text-xs md:text-sm shadow transition flex items-center gap-2 whitespace-nowrap ml-1" title="Mở file dự án từ máy">
+                            <i class="fa-solid fa-folder-open"></i>
+                            <input type="file" id="projectFile" accept=".json,.cothu" class="hidden" onchange="loadProject(this)">
+                        </label>
+                    </div>
                     
                     <button onclick="exportImage()" class="bg-white text-gray-900 hover:bg-gray-100 font-bold px-4 py-1.5 rounded-md text-xs md:text-sm shadow transition flex items-center gap-2 whitespace-nowrap ml-1">
-                        <i class="fa-solid fa-eye"></i> <span class="hidden sm:inline">Xem Trước</span>
+                        <i class="fa-solid fa-eye"></i> <span class="hidden sm:inline">Xem</span>
+                    </button>
+
+                     <!-- Reset Data Button -->
+                     <button onclick="openResetModal()" class="bg-red-600/80 hover:bg-red-500 text-white px-3 py-1.5 rounded-md text-xs md:text-sm shadow transition flex items-center gap-2 whitespace-nowrap ml-1" title="Xóa dữ liệu & Làm mới">
+                        <i class="fa-solid fa-trash-arrow-up"></i>
                     </button>
                 </div>
             </div>
@@ -239,10 +255,48 @@
                 <span class="flex items-center gap-1"><i class="fa-solid fa-rotate-left text-gray-400"></i> Ctrl+Z: Undo</span>
                 <span class="flex items-center gap-1"><i class="fa-solid fa-rotate-right text-gray-400"></i> Ctrl+Shift+Z: Redo</span>
                 <span class="flex items-center gap-1"><i class="fa-solid fa-face-smile text-yellow-500"></i> Kéo góc Sticker để Zoom</span>
-                <span class="flex items-center gap-1"><i class="fa-solid fa-trash-can text-red-500"></i> Chọn Sticker + Delete để xóa</span>
+                <span class="flex items-center gap-1"><i class="fa-solid fa-floppy-disk text-blue-500"></i> Tự động lưu</span>
             </p>
         </div>
     </main>
+
+    <!-- Modal Save Project (Thay thế Prompt) -->
+    <div id="saveModal" class="fixed inset-0 bg-black/90 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6 border border-gray-700">
+            <h3 class="text-white font-bold text-lg mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-floppy-disk text-blue-400"></i> Lưu Dự Án
+            </h3>
+            <p class="text-gray-300 text-sm mb-4">Nhập tên file (lưu .json):</p>
+            <input type="text" id="saveFileNameInput" class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white mb-4 focus:border-blue-500 focus:outline-none placeholder-gray-500" placeholder="DuAn_CoThu...">
+            <div class="flex justify-end gap-3">
+                <button onclick="closeSaveModal()" class="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition font-medium">Hủy</button>
+                <button onclick="confirmSaveProject()" class="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition font-bold shadow-lg flex items-center gap-2">
+                    <i class="fa-solid fa-download"></i> Lưu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirm Reset (Thay thế Confirm) -->
+    <div id="resetModal" class="fixed inset-0 bg-black/90 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-800 rounded-xl shadow-2xl max-w-sm w-full p-6 border border-gray-700 text-center">
+            <div class="mb-4 text-yellow-500 flex justify-center">
+                <i class="fa-solid fa-triangle-exclamation text-4xl"></i>
+            </div>
+            <h3 class="text-white font-bold text-lg mb-2">Xác Nhận Xóa?</h3>
+            <p class="text-gray-300 text-sm mb-6">Hành động này sẽ xóa toàn bộ dữ liệu và hình ảnh hiện tại để làm mới. Bạn có chắc không?</p>
+            <div class="flex justify-center gap-3">
+                <button onclick="closeResetModal()" class="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition font-medium">Không</button>
+                <button onclick="confirmResetData()" class="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 transition font-bold shadow-lg">Có, Xóa Hết</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification (Thay thế Alert) -->
+    <div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg border border-gray-600 transition-opacity duration-300 opacity-0 pointer-events-none z-[70] flex items-center gap-2">
+        <i class="fa-solid fa-circle-info text-blue-400"></i>
+        <span id="toastMsg">Thông báo</span>
+    </div>
 
     <!-- Modal Preview -->
     <div id="previewModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
@@ -268,7 +322,7 @@
                         <span class="text-sm font-medium">Gắn Lưới</span>
                     </label>
 
-                    <!-- New Checkbox for Center Axis in Preview -->
+                    <!-- Checkbox for Center Axis in Preview -->
                     <label class="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white select-none">
                         <input type="checkbox" id="exportAxisCheck" class="w-5 h-5 rounded border-gray-600 bg-gray-700 text-red-500 focus:ring-red-500 cursor-pointer">
                         <span class="text-sm font-medium">Gắn Trục Giữa</span>
@@ -281,17 +335,21 @@
                     </div>
                 </div>
 
-                <div class="flex gap-3 w-full sm:w-auto justify-end">
-                    <button onclick="closePreview()" class="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition font-medium">Quay lại</button>
-                    <button onclick="confirmDownload()" class="px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-500 transition font-bold shadow-lg flex items-center gap-2">
-                        <i class="fa-solid fa-download"></i> Tải Về
-                    </button>
+                <!-- ADDED: Download filename input -->
+                <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto justify-end items-center">
+                    <input type="text" id="downloadFileName" class="w-full sm:w-40 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white focus:border-green-500 focus:outline-none placeholder-gray-500" placeholder="Tên file ảnh...">
+                    <div class="flex gap-3 w-full sm:w-auto">
+                        <button onclick="closePreview()" class="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition font-medium whitespace-nowrap">Quay lại</button>
+                        <button onclick="confirmDownload()" class="px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-500 transition font-bold shadow-lg flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-download"></i> Tải Về
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Emoji Picker Dropdown (Moved to Body for fixed positioning) -->
+    <!-- Emoji Picker Dropdown -->
     <div id="emojiPicker" class="hidden fixed z-[100] bg-gray-800 border border-gray-600 rounded-lg shadow-xl p-2 w-64">
         <div class="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto emoji-grid">
             <!-- Common Masks -->
@@ -337,10 +395,268 @@
         
         let activeEditor = null;
 
-        // --- HỆ THỐNG LỊCH SỬ (UNDO/REDO) ---
+        // --- KEYS FOR LOCAL STORAGE ---
+        const LS_KEY_STATE = 'cothu_pc_state';
+        const LS_KEY_IMAGES = 'cothu_pc_images';
+
+        // --- HISTORY SYSTEM (UNDO/REDO) ---
         const historyStack = [];
         const redoStack = []; 
         const MAX_HISTORY = 50;
+
+        // --- UI HELPERS ---
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.innerText = msg;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => toast.classList.add('opacity-0'), 3000);
+        }
+
+        // --- SAVE/LOAD MODALS ---
+        const saveModalEl = document.getElementById('saveModal');
+        const saveFileNameInputEl = document.getElementById('saveFileNameInput');
+        const resetModalEl = document.getElementById('resetModal');
+
+        function openSaveModal() {
+            const timestamp = new Date().toISOString().slice(0,19).replace(/[-T:]/g,"");
+            saveFileNameInputEl.value = `DuAn_CoThu_${timestamp}`;
+            saveModalEl.classList.remove('hidden');
+            setTimeout(() => saveFileNameInputEl.focus(), 100);
+        }
+
+        function closeSaveModal() {
+            saveModalEl.classList.add('hidden');
+        }
+
+        function openResetModal() {
+            resetModalEl.classList.remove('hidden');
+        }
+
+        function closeResetModal() {
+            resetModalEl.classList.add('hidden');
+        }
+
+        function confirmResetData() {
+            localStorage.removeItem(LS_KEY_STATE);
+            localStorage.removeItem(LS_KEY_IMAGES);
+            location.reload();
+        }
+
+        function confirmSaveProject() {
+            try {
+                let fileName = saveFileNameInputEl.value.trim();
+                if (!fileName) fileName = `DuAn_CoThu_${new Date().getTime()}`;
+                if (!fileName.toLowerCase().endsWith('.json')) fileName += '.json';
+
+                // Collect data
+                const projectData = {
+                    version: "1.0",
+                    timestamp: new Date().toISOString(),
+                    state: {
+                        frameWidth, frameHeight, frameY, isFrameLocked, showGrid, showCenterAxis, gridColor,
+                        edit1: { crop: edit1.crop, state: edit1.state, stickers: edit1.stickers },
+                        edit2: { crop: edit2.crop, state: edit2.state, stickers: edit2.stickers }
+                    },
+                    images: {
+                        img1: edit1.isLoaded ? edit1.img.src : null,
+                        img2: edit2.isLoaded ? edit2.img.src : null
+                    }
+                };
+
+                const jsonString = JSON.stringify(projectData);
+                const blob = new Blob([jsonString], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                
+                // Create link and simulate click
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                closeSaveModal();
+                showToast("Đã lưu dự án thành công!");
+
+            } catch (e) {
+                showToast("Lỗi khi lưu file: " + e.message);
+                console.error(e);
+            }
+        }
+
+        // --- LOCAL STORAGE LOGIC ---
+        let saveTimeout;
+        function debouncedSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveToLocalStorage, 1000); // Save after 1s of inactivity
+        }
+
+        function saveToLocalStorage() {
+            try {
+                // Save settings & positions (Lightweight)
+                const state = {
+                    frameWidth,
+                    frameHeight,
+                    frameY,
+                    isFrameLocked,
+                    showGrid,
+                    showCenterAxis,
+                    gridColor,
+                    edit1: {
+                        crop: edit1.crop,
+                        state: edit1.state,
+                        stickers: edit1.stickers
+                    },
+                    edit2: {
+                        crop: edit2.crop,
+                        state: edit2.state,
+                        stickers: edit2.stickers
+                    }
+                };
+                localStorage.setItem(LS_KEY_STATE, JSON.stringify(state));
+            } catch (e) {
+                console.error("Auto-save failed:", e);
+            }
+        }
+
+        function saveImagesToLocalStorage() {
+            try {
+                // Save Images (Heavyweight)
+                const images = {
+                    img1: edit1.isLoaded ? edit1.img.src : null,
+                    img2: edit2.isLoaded ? edit2.img.src : null
+                };
+                // Check approximate size before saving
+                const str = JSON.stringify(images);
+                if (str.length > 5 * 1024 * 1024) { 
+                    showToast("Ảnh quá lớn để tự động lưu!");
+                } else {
+                    localStorage.setItem(LS_KEY_IMAGES, str);
+                }
+            } catch (e) {
+                console.error("Image auto-save failed:", e);
+            }
+        }
+
+        function loadProject(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    restoreProjectFromData(data);
+                    showToast("Đã mở dự án thành công!");
+                } catch (err) {
+                    showToast("Lỗi đọc file dự án!");
+                }
+                input.value = ''; 
+            };
+            reader.readAsText(file);
+        }
+
+        function restoreProjectFromData(data) {
+            const state = data.state;
+            const images = data.images;
+
+            if (state) {
+                frameWidth = state.frameWidth;
+                frameHeight = state.frameHeight;
+                frameY = state.frameY;
+                isFrameLocked = state.isFrameLocked;
+                showGrid = state.showGrid !== undefined ? state.showGrid : false;
+                showCenterAxis = state.showCenterAxis !== undefined ? state.showCenterAxis : true;
+                gridColor = state.gridColor || 'light';
+
+                updateLockUI();
+                // UI Updates
+                if(showGrid) {
+                    gridBtn.classList.add('text-blue-400', 'bg-gray-600');
+                    gridBtn.classList.remove('text-gray-400');
+                } else {
+                    gridBtn.classList.remove('text-blue-400', 'bg-gray-600');
+                    gridBtn.classList.add('text-gray-400');
+                }
+
+                if(showCenterAxis) {
+                    centerAxisBtn.classList.add('text-red-400', 'bg-gray-600');
+                    centerAxisBtn.classList.remove('text-gray-400');
+                } else {
+                    centerAxisBtn.classList.remove('text-red-400', 'bg-gray-600');
+                    centerAxisBtn.classList.add('text-gray-400');
+                }
+
+                const gridIcon = gridColorBtn.querySelector('i');
+                if (gridColor === 'dark') {
+                    gridIcon.className = 'fa-solid fa-circle text-gray-900'; 
+                } else {
+                    gridIcon.className = 'fa-solid fa-circle-half-stroke'; 
+                }
+
+                if (state.edit1) {
+                    edit1.crop = state.edit1.crop;
+                    edit1.state = state.edit1.state;
+                    edit1.stickers = state.edit1.stickers;
+                }
+                if (state.edit2) {
+                    edit2.crop = state.edit2.crop;
+                    edit2.state = state.edit2.state;
+                    edit2.stickers = state.edit2.stickers;
+                }
+                
+                edit1.updateControls();
+                edit2.updateControls();
+            }
+
+            if (images) {
+                 if (images.img1) {
+                    const img1 = new Image();
+                    img1.onload = () => {
+                        edit1.img = img1;
+                        edit1.isLoaded = true;
+                        edit1.placeholder.style.display = 'none';
+                        edit1.draw();
+                    };
+                    img1.src = images.img1;
+                }
+
+                if (images.img2) {
+                    const img2 = new Image();
+                    img2.onload = () => {
+                        edit2.img = img2;
+                        edit2.isLoaded = true;
+                        edit2.placeholder.style.display = 'none';
+                        edit2.draw();
+                    };
+                    img2.src = images.img2;
+                }
+            }
+            
+            if (state) localStorage.setItem(LS_KEY_STATE, JSON.stringify(state));
+            if (images) localStorage.setItem(LS_KEY_IMAGES, JSON.stringify(images));
+
+            setTimeout(() => { edit1.draw(); edit2.draw(); }, 200);
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const savedState = localStorage.getItem(LS_KEY_STATE);
+                const savedImages = localStorage.getItem(LS_KEY_IMAGES);
+                
+                if (savedState || savedImages) {
+                    const data = {
+                        state: savedState ? JSON.parse(savedState) : null,
+                        images: savedImages ? JSON.parse(savedImages) : null
+                    };
+                    restoreProjectFromData(data);
+                }
+            } catch (e) {
+                console.error("Load failed:", e);
+            }
+        }
 
         function saveHistory() {
             // Deep copy stickers
@@ -373,6 +689,8 @@
             historyStack.push(state);
             if (historyStack.length > MAX_HISTORY) historyStack.shift();
             redoStack.length = 0;
+
+            debouncedSave(); // Trigger Auto Save
         }
 
         function undo() {
@@ -381,6 +699,7 @@
             redoStack.push(currentState);
             const prevState = historyStack[historyStack.length - 1];
             restoreState(prevState);
+            debouncedSave();
         }
 
         function redo() {
@@ -388,6 +707,7 @@
             const nextState = redoStack.pop();
             historyStack.push(nextState);
             restoreState(nextState);
+            debouncedSave();
         }
 
         function restoreState(state) {
@@ -465,20 +785,19 @@
 
             addSticker(emoji) {
                 if (!this.isLoaded) {
-                    alert("Vui lòng tải ảnh lên trước khi thêm Sticker!");
+                    showToast("Vui lòng tải ảnh lên trước!");
                     return;
                 }
                 
-                // TỰ ĐỘNG TÍNH TOÁN KÍCH THƯỚC STICKER
-                const baseFontSize = 100; // Font size cơ bản trong draw()
-                const targetScreenSize = CANVAS_WIDTH / 5; // Kích thước mong muốn trên màn hình (~108px)
+                const baseFontSize = 100; // Base font size
+                const targetScreenSize = CANVAS_WIDTH / 5; // Approx 108px
                 
                 let autoScale = targetScreenSize / (baseFontSize * this.state.scale);
                 if (autoScale < 0.1) autoScale = 0.1;
                 
                 this.stickers.push({
                     text: emoji,
-                    x: 0, // Tâm ảnh
+                    x: 0, // Center relative
                     y: 0,
                     scale: autoScale,
                     angle: 0
@@ -586,14 +905,13 @@
                 const margin = 20; 
                 
                 if (this.isLoaded) {
-                    // 0. ƯU TIÊN 1: Kiểm tra tay nắm resize của Sticker đang chọn TRƯỚC TIÊN (Sử dụng toạ độ Màn hình Canvas)
+                    // 0. PRIORITY: Check Sticker Handles (Screen Space)
                     if (this.interaction.stickerIndex !== -1 && this.interaction.stickerIndex < this.stickers.length) {
                         const i = this.interaction.stickerIndex;
                         const s = this.stickers[i];
                         const size = 100 * s.scale;
                         const half = size / 2;
                         
-                        // Lấy 4 góc trong hệ toạ độ Local
                         const cornersLocal = [
                             { x: s.x - half, y: s.y - half },
                             { x: s.x + half, y: s.y - half },
@@ -601,20 +919,14 @@
                             { x: s.x - half, y: s.y + half }
                         ];
 
-                        // Chuyển 4 góc về hệ toạ độ Màn hình (Canvas Screen Space)
-                        // Bằng cách này, vùng hit sẽ luôn cố định theo pixel màn hình, không bị ảnh hưởng bởi zoom ảnh
                         const screenCorners = cornersLocal.map(p => this.transformPoint(p.x, p.y, this.state.scale, this.state.angle, this.state.x, this.state.y));
-                        
-                        // Vùng bấm cố định 20px trên màn hình (theo yêu cầu)
                         const HIT_RADIUS_SCREEN = 20;
 
-                        // Tìm góc gần nhất trong vùng bấm
                         let minCornerDist = HIT_RADIUS_SCREEN;
                         let bestHandle = -1;
 
                         for (let k = 0; k < screenCorners.length; k++) {
                             const corner = screenCorners[k];
-                            // Tính khoảng cách chuột (x,y) tới góc trên màn hình
                             const dist = Math.sqrt((x - corner.x)**2 + (y - corner.y)**2);
                             if (dist < minCornerDist) {
                                 minCornerDist = dist;
@@ -623,7 +935,7 @@
                         }
                         
                         if (bestHandle !== -1) {
-                            return { type: 'sticker-resize', index: i, handle: bestHandle }; // k là index của góc
+                            return { type: 'sticker-resize', index: i, handle: bestHandle };
                         }
                     }
                 }
@@ -690,15 +1002,37 @@
                     if(!file) return;
                     const reader = new FileReader();
                     reader.onload = (ev) => {
-                        this.img.src = ev.target.result;
-                        this.img.onload = () => {
-                            this.isLoaded = true;
-                            this.crop = { t: 0, b: 0, l: 0, r: 0 };
-                            this.placeholder.style.display = 'none';
-                            this.resetView();
-                            this.setActive(); 
-                            saveHistory(); 
-                        }
+                        // Compress or use data URL directly
+                        const tempImg = new Image();
+                        tempImg.onload = () => {
+                            // Optional: Resize to max 1920px to save storage
+                            const maxDim = 1920;
+                            let w = tempImg.width, h = tempImg.height;
+                            if (w > maxDim || h > maxDim) {
+                                if (w > h) { h *= maxDim/w; w = maxDim; }
+                                else { w *= maxDim/h; h = maxDim; }
+                            }
+                            
+                            const cvs = document.createElement('canvas');
+                            cvs.width = w; cvs.height = h;
+                            const ctx = cvs.getContext('2d');
+                            ctx.drawImage(tempImg, 0, 0, w, h);
+                            
+                            // Use JPEG 0.8 for reasonable quality/size
+                            this.img.src = cvs.toDataURL('image/jpeg', 0.8);
+                            
+                            // Process after setting src
+                            this.img.onload = () => {
+                                this.isLoaded = true;
+                                this.crop = { t: 0, b: 0, l: 0, r: 0 };
+                                this.placeholder.style.display = 'none';
+                                this.resetView();
+                                this.setActive(); 
+                                saveHistory(); 
+                                saveImagesToLocalStorage(); // Trigger heavy save
+                            }
+                        };
+                        tempImg.src = ev.target.result;
                     };
                     reader.readAsDataURL(file);
                 });
@@ -748,13 +1082,11 @@
                         this.interaction.stickerIndex = hit.index;
                         this.interaction.stickerHandle = hit.handle;
                         
-                        // Calculate initial distance from center to mouse for scaling reference
                         const localPt = this.getInverseTransformedPoint(coords.x, coords.y);
                         const s = this.stickers[hit.index];
                         this.interaction.startDist = Math.sqrt((localPt.x - s.x)**2 + (localPt.y - s.y)**2);
                         this.interaction.startScale = s.scale;
                         
-                        // Cập nhật Anchor Point (điểm đối diện) trong Local Space
                         // Handle order: 0: TL, 1: TR, 2: BR, 3: BL
                         // Anchor order: 2: BR, 3: BL, 0: TL, 1: TR
                         const size = 100 * s.scale;
@@ -793,7 +1125,6 @@
                         if(e.cancelable) e.preventDefault();
                     }
                     
-                    // Redraw to show selection immediately
                     this.draw();
                 };
 
@@ -831,24 +1162,14 @@
                         // STICKER RESIZE
                         else if (type === 'sticker-resize') {
                             const s = this.stickers[this.interaction.stickerIndex];
-                            
-                            // Sử dụng logic Anchor-based scaling
                             const anchorLocal = this.interaction.anchorLocal;
                             const mouseLocal = this.getInverseTransformedPoint(coords.x, coords.y);
-                            
-                            // Tính khoảng cách mới giữa chuột và anchor
                             const newDist = Math.sqrt((mouseLocal.x - anchorLocal.x)**2 + (mouseLocal.y - anchorLocal.y)**2);
-                            
-                            // Tính scale mới:
-                            // DiagonalLength = 100 * scale * sqrt(2)
-                            // => Scale = DiagonalLength / (100 * sqrt(2))
-                            
                             let newScale = newDist / (100 * Math.sqrt(2));
 
                             if (newScale < 0.1) newScale = 0.1;
                             s.scale = newScale;
 
-                            // Cập nhật tâm mới: Là trung điểm của Anchor và Mouse
                             s.x = (anchorLocal.x + mouseLocal.x) / 2;
                             s.y = (anchorLocal.y + mouseLocal.y) / 2;
 
@@ -945,12 +1266,11 @@
                         saveHistory(); 
                     }
                     this.interaction.type = 'none';
-                    // Đã bỏ dòng reset stickerIndex = -1 để giữ chọn
                     this.canvas.style.cursor = 'grab';
                 };
 
                 const wheel = (e) => {
-                    // Wheel disabled for sticker zoom as per request
+                    // Wheel disabled for sticker zoom
                 };
 
                 this.canvas.addEventListener('mousedown', start);
@@ -1021,7 +1341,6 @@
                 
                 if (!isExporting) {
                     this.drawFrameMask();
-                    // Draw Sticker Controls LAST so they appear ON TOP of the mask
                     this.drawStickerControls();
                     if(showCenterAxis) this.drawCenterAxis(); 
                 } else {
@@ -1062,13 +1381,12 @@
 
                 // Draw Corner Handles
                 this.ctx.setLineDash([]);
-                this.ctx.fillStyle = "#ffffff"; // White fill
-                this.ctx.strokeStyle = "#fbbf24"; // Yellow border
-                this.ctx.lineWidth = 2; // Thicker border
+                this.ctx.fillStyle = "#ffffff"; 
+                this.ctx.strokeStyle = "#fbbf24"; 
+                this.ctx.lineWidth = 2; 
                 
                 screenCorners.forEach(p => {
                     this.ctx.beginPath();
-                    // Kích thước chấm tròn 3px
                     this.ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
                     this.ctx.fill();
                     this.ctx.stroke();
@@ -1077,7 +1395,6 @@
                 this.ctx.restore();
             }
 
-            // ... (keep remaining methods drawCenterAxis, drawImageHandles, drawCropHandles, drawGrid, drawFrameMask) ...
             drawCenterAxis() {
                 const activeY = frameY;
                 let activeX = (this.side === 'left') ? (CANVAS_WIDTH - frameWidth) : 0;
@@ -1328,6 +1645,13 @@
             exportGridCheck.checked = false;
             exportAxisCheck.checked = false;
             
+            // Set default filename ONLY if input is empty
+            const nameInput = document.getElementById('downloadFileName');
+            if (!nameInput.value.trim()) {
+                const timestamp = new Date().toISOString().slice(0,19).replace(/[-T:]/g,"");
+                nameInput.value = `Compare_${timestamp}`;
+            }
+
             updateResultImage();
             modal.classList.remove('hidden');
         }
@@ -1403,9 +1727,20 @@
         }
 
         function confirmDownload() {
+            const nameInput = document.getElementById('downloadFileName');
+            let fileName = nameInput.value.trim();
+            
+            if (!fileName) {
+                const timestamp = new Date().toISOString().slice(0,19).replace(/[-T:]/g,"");
+                fileName = `Compare_${timestamp}`;
+            }
+            
+            if (!fileName.toLowerCase().endsWith('.jpg')) {
+                fileName += '.jpg';
+            }
+
             const link = document.createElement('a');
-            const timestamp = new Date().toISOString().slice(0,19).replace(/[-T:]/g,"");
-            link.download = `Compare_${timestamp}.jpg`;
+            link.download = fileName;
             link.href = currentDataUrl;
             
             document.body.appendChild(link);
@@ -1453,7 +1788,8 @@
         edit1.draw();
         edit2.draw();
 
-        saveHistory();
+        // Load Saved Data on Init
+        loadFromLocalStorage();
 
         const stageContainer = document.getElementById('stageContainer');
         const controlsArea = document.getElementById('controlsArea');
