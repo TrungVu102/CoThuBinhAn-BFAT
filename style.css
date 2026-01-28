@@ -1,0 +1,33 @@
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+
+/* Ẩn mũi tên mặc định của input number để sạch đẹp hơn */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] { -moz-appearance: textfield; }
+
+/* Custom Range Slider */
+input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #fff; cursor: pointer; margin-top: -6px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); border: 2px solid currentColor; }
+input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: currentColor; opacity: 0.2; border-radius: 2px; }
+
+canvas { touch-action: none; outline: none; }
+.canvas-bg { background-color: #f9fafb; background-image: linear-gradient(45deg, #e5e7eb 25%, transparent 25%), linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e7eb 75%), linear-gradient(-45deg, transparent 75%, #e5e7eb 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.active-editor-wrapper { box-shadow: inset 0 0 0 3px #db2777; }
+.font-brand { font-family: 'Merriweather', serif; }
+
+.btn-tool { cursor: pointer; padding: 6px 12px; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.2s; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.btn-tool:hover { transform: translateY(-1px); filter: brightness(105%); }
+.btn-icon { background: white; padding: 6px 12px; border-radius: 9999px; font-size: 0.875rem; transition: all 0.2s; border: 1px solid; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.btn-icon:hover { background-color: #f9fafb; }
+.preset-btn { padding: 6px 12px; font-size: 0.75rem; font-weight: 700; color: #6b7280; transition: all 0.2s; }
+.preset-btn:hover { background-color: #f0fdf4; color: #16a34a; }
+.control-panel { background: white; border-radius: 12px; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; }
